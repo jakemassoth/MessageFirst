@@ -4,6 +4,11 @@
 #include <unistd.h>
 #include "include/messagefirst_api.h"
 
+void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
+    fprintf(stderr, "This is from the callback!\n");
+    mf_error_print(err);
+}
+
 int main(void) {
     int SERVER_PORT = 8877;
 
@@ -36,6 +41,7 @@ int main(void) {
     struct sockaddr_in client_address;
     int client_address_len = 0;
     struct mf_ctx ctx;
+    ctx.error_cb = error_cb;
 
     int sock;
     if ((sock = accept(listen_sock, (struct sockaddr *)&client_address, (socklen_t *) &client_address_len)) < 0) {

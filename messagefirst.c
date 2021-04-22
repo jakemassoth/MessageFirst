@@ -10,6 +10,7 @@ const char *mf_error_str(mf_error_t e) {
             "MF_ERROR_RECV_LEN",
             "MF_ERROR_SEND",
             "MF_ERROR_RECV_MSG",
+            "MF_ERROR_SOCKET_CLOSED"
     };
 
     const char *str = NULL;

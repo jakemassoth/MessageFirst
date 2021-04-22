@@ -4,6 +4,11 @@
 #include <unistd.h>
 #include "include/messagefirst_api.h"
 
+void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
+    fprintf(stderr, "This is from the callback!\n");
+    mf_error_print(err);
+}
+
 int main(void) {
     const char* server_name = "localhost";
     const int server_port = 8877;
@@ -32,6 +37,7 @@ int main(void) {
     struct mf_msg msg;
     msg.len = strlen("Hello, world!");
     strcpy(msg.data, "Hello, world!");
+    ctx.error_cb = error_cb;
 
     int res = mf_send_msg(sock, &msg, &ctx);
 

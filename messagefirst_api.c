@@ -73,16 +73,12 @@ mf_error_t recv_msg(int socket, struct mf_msg *msg_recv, struct mf_ctx *ctx) {
 
 int mf_send_msg(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
     mf_error_t err;
-    if ((err = send_len_and_data(socket, msg, ctx)) != MF_ERROR_OK) {
-        ctx->error_cb(socket, msg, err);
-        return -1;
-    }
+    CB_IF_ERROR(err,send_len_and_data(socket, msg, ctx), msg, ctx);
 
     struct mf_msg response;
-    if ((err = recv_msg(socket, &response, ctx)) != MF_ERROR_OK) {
-        ctx->error_cb(socket, msg, err);
-        return -1;
-    }
+    CB_IF_ERROR(err,recv_msg(socket, &response, ctx), &response, ctx);
+
+    CB_IF_ERROR(err,ctx->success_cb(socket, &response), &response, ctx);
 
     return 0;
 }
@@ -90,10 +86,9 @@ int mf_send_msg(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
 int mf_poll(int socket, struct mf_ctx *ctx) {
     mf_error_t err;
     struct mf_msg response;
-    if ((err = recv_msg(socket, &response, ctx)) != MF_ERROR_OK) {
-        ctx->error_cb(socket, &response, err);
-        return -1;
-    }
+    CB_IF_ERROR(err,recv_msg(socket, &response, ctx), &response, ctx)
+
+    CB_IF_ERROR(err, ctx->success_cb(socket, &response), &response, ctx)
 
     return 0;
 }

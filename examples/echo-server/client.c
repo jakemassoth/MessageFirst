@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "include/messagefirst_api.h"
+#include "../../src/include/messagefirst_api.h"
 
 void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
     fprintf(stderr, "This is from the callback!\n");

@@ -46,7 +46,7 @@ mf_error_t send_len_and_data(int socket, struct mf_msg *msg, struct mf_ctx *ctx)
 
     ssize_t len;
     if ((len = send(socket, &msg->data, msg->len, 0)) < 0) {
-        return -1;
+        return MF_ERROR_SEND;
     }
     assert(len == msg->len);
 
@@ -66,7 +66,7 @@ mf_error_t recv_msg(int socket, struct mf_msg *msg_recv, struct mf_ctx *ctx) {
     }
     msg_recv->len = expected;
     memcpy(msg_recv->data, buff, MAX_DATA_LEN);
-    DEBUG_PRINT("Message len: %d\nMessage content: %s\n", msg_recv->len, msg_recv->data);
+    DEBUG_PRINT("Message len: %d Message content: %s\n", msg_recv->len, msg_recv->data);
     return err;
 }
 

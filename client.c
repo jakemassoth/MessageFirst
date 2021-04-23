@@ -9,6 +9,10 @@ void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
     mf_error_print(err);
 }
 
+mf_error_t success_cb(int socket, struct mf_msg *msg) {
+    return MF_ERROR_OK;
+}
+
 int main(void) {
     const char* server_name = "localhost";
     const int server_port = 8877;
@@ -38,6 +42,7 @@ int main(void) {
     msg.len = strlen("Hello, world!");
     strcpy(msg.data, "Hello, world!");
     ctx.error_cb = error_cb;
+    ctx.success_cb = success_cb;
 
     int res = mf_send_msg(sock, &msg, &ctx);
 

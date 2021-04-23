@@ -93,6 +93,11 @@ int mf_poll(int socket, struct mf_ctx *ctx) {
     return 0;
 }
 
-int mf_send_msg_response(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
-    return 0;
+mf_error_t mf_send_msg_response(int socket, struct mf_msg *msg) {
+    mf_error_t err;
+    struct mf_ctx *ctx = (struct mf_ctx*) malloc(sizeof(struct mf_ctx));
+    assert(ctx);
+    CB_IF_ERROR(err,send_len_and_data(socket, msg, ctx), msg, ctx);
+
+    return err;
 }

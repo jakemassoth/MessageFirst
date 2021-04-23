@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef enum mf_error_e {
     MF_ERROR_OK = 0,

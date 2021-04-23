@@ -9,6 +9,10 @@ void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
     mf_error_print(err);
 }
 
+mf_error_t success_cb(int socket, struct mf_msg *msg) {
+    return mf_send_msg_response(socket, msg);
+}
+
 int main(void) {
     int SERVER_PORT = 8877;
 
@@ -42,6 +46,7 @@ int main(void) {
     int client_address_len = 0;
     struct mf_ctx ctx;
     ctx.error_cb = error_cb;
+    ctx.success_cb = success_cb;
 
     int sock;
     if ((sock = accept(listen_sock, (struct sockaddr *)&client_address, (socklen_t *) &client_address_len)) < 0) {

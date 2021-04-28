@@ -13,6 +13,6 @@
 #define CB_IF_ERROR(err, fn_call, msg, ctx) \
 if ((err = fn_call) != MF_ERROR_OK) {  \
     ctx->error_cb(socket, msg, err);     \
-    return -1;                               \
+    return 1;                               \
 }
 #endif //MESSAGEFIRST_UTIL_H

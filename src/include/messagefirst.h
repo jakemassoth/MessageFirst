@@ -23,13 +23,13 @@ struct __attribute__((packed)) mf_msg {
 };
 
 typedef void (*mf_error_cb_t)(int, struct mf_msg*, mf_error_t err);
-typedef mf_error_t (*mf_success_cb_t)(int, struct mf_msg*);
+typedef mf_error_t (*mf_recv_cb)(int, struct mf_msg*);
 typedef mf_error_t (*mf_timeout_cb_t)(int, struct mf_msg*);
 
 struct __attribute__((packed)) mf_ctx {
     long timeout;
     mf_error_cb_t error_cb;
-    mf_success_cb_t success_cb;
+    mf_recv_cb recv_cb;
     mf_timeout_cb_t timeout_cb;
 };
 

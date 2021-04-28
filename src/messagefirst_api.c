@@ -17,6 +17,8 @@ mf_error_t receive_variable_size(int socket, int expected, char dest[MAX_DATA_LE
 
     char p_buff[MAX_DATA_LEN];
     char buff[MAX_DATA_LEN];
+    memset(buff, 0, MAX_DATA_LEN);
+    memset(p_buff, 0, MAX_DATA_LEN);
 
     while (so_far < expected) {
         ssize_t i = recv(socket, &p_buff, expected, 0);
@@ -61,6 +63,7 @@ mf_error_t recv_msg(int socket, struct mf_msg *msg_recv, struct mf_ctx *ctx) {
     if (expected == 0) return MF_ERROR_SOCKET_CLOSED;
 
     char buff[MAX_DATA_LEN];
+    memset(buff, 0, MAX_DATA_LEN);
     if ((err = receive_variable_size(socket, expected, buff)) != MF_ERROR_OK) {
         return err;
     }
@@ -78,17 +81,19 @@ int mf_send_msg(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
     struct mf_msg response;
     CB_IF_ERROR(err,recv_msg(socket, &response, ctx), &response, ctx);
 
-    CB_IF_ERROR(err,ctx->success_cb(socket, &response), &response, ctx);
+    CB_IF_ERROR(err,ctx->recv_cb(socket, &response), &response, ctx);
 
     return 0;
 }
 
 int mf_poll(int socket, struct mf_ctx *ctx) {
-    mf_error_t err;
+    mf_error_t err = MF_ERROR_OK;
     struct mf_msg response;
-    CB_IF_ERROR(err,recv_msg(socket, &response, ctx), &response, ctx)
+    while (err == MF_ERROR_OK){
+        CB_IF_ERROR(err, recv_msg(socket, &response, ctx), &response, ctx)
 
-    CB_IF_ERROR(err, ctx->success_cb(socket, &response), &response, ctx)
+        CB_IF_ERROR(err, ctx->recv_cb(socket, &response), &response, ctx)
+    }
 
     return 0;
 }

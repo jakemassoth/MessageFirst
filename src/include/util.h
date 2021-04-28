@@ -1,5 +1,6 @@
 #ifndef MESSAGEFIRST_UTIL_H
 #define MESSAGEFIRST_UTIL_H
+#include <fcntl.h>
 
 #define DEBUG 1
 
@@ -11,7 +12,11 @@
 #endif
 
 #define CB_IF_ERROR(err, fn_call, msg, ctx) \
-if ((err = fn_call) != MF_ERROR_OK) {  \
+if ((err = fn_call) != MF_ERROR_OK) {       \
+    if (err == MF_ERROR_SOCKET_CLOSED) {    \
+        mf_error_print(err);                                    \
+        return 0;\
+    }                                        \
     ctx->error_cb(socket, msg, err);     \
     return 1;                               \
 }

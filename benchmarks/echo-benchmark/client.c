@@ -5,7 +5,7 @@
 #include <pthread.h>
 #include <include/messagefirst_api.h>
 
-#define NUM_CLIENTS 2
+#define NUM_CLIENTS 1
 #define NUM_MSG 10
 
 void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {

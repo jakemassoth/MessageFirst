@@ -6,3 +6,4 @@ set(CMAKE_C_FLAGS "-Wall -Wextra -Wpedantic -Wformat=2 -Wno-unused-parameter -Ws
 
 add_subdirectory(src)
 add_subdirectory(examples)
+add_subdirectory(benchmarks)

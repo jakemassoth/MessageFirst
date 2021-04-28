@@ -10,6 +10,7 @@ void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
 }
 
 mf_error_t recv_cb(int socket, struct mf_msg *msg) {
+    assert(strcmp(msg->data, "12345678") == 0);
     return MF_ERROR_OK;
 }
 
@@ -39,13 +40,15 @@ int main(void) {
 
     struct mf_ctx ctx;
     struct mf_msg msg;
-    msg.len = strlen("Hello, world!");
-    strcpy(msg.data, "Hello, world!");
+    msg.len = strlen("12345678");
+    strcpy(msg.data, "12345678");
     ctx.error_cb = error_cb;
     ctx.recv_cb = recv_cb;
+    int res = -1;
 
-    int res = mf_send_msg(sock, &msg, &ctx);
-
+    for (int i = 0; i < 1000; i++) {
+        res = mf_send_msg(sock, &msg, &ctx);
+    }
     close(sock);
     return res;
 }

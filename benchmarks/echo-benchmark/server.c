@@ -4,12 +4,16 @@
 #include <unistd.h>
 #include <include/messagefirst_api.h>
 
+int num = 0;
+
 void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
     fprintf(stderr, "This is from the callback!\n");
     mf_error_print(err);
 }
 
 mf_error_t recv_cb(int socket, struct mf_msg *msg) {
+    num++;
+    assert(strcmp(msg->data, "12345678") == 0);
     return mf_send_msg_response(socket, msg);
 }
 
@@ -59,5 +63,7 @@ int main(void) {
     close(sock);
 
     close(listen_sock);
+
+    printf("messages sent: %d\n", num);
     return res;
 }

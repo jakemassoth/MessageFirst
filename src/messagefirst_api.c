@@ -112,15 +112,19 @@ int mf_send_msg_blocking(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
     return 0;
 }
 
-int recv_and_response(int socket, struct mf_ctx *ctx) {
-    mf_error_t err = MF_ERROR_OK;
+mf_error_t recv_and_response(int socket, struct mf_ctx *ctx) {
+    mf_error_t err;
     struct mf_msg response;
-    while (err == MF_ERROR_OK){
-        CB_IF_ERROR(err, recv_msg(socket, &response, ctx), &response, ctx)
 
-        CB_IF_ERROR(err, ctx->recv_cb(socket, &response), &response, ctx)
+    if ((err = recv_msg(socket, &response, ctx)) != MF_ERROR_OK) {
+        return err;
     }
-    return 0;
+
+    if ((err = ctx->recv_cb(socket, &response)) != MF_ERROR_OK) {
+        return err;
+    }
+
+    return MF_ERROR_OK;
 }
 
 mf_error_t epoll_ctl_add(int epfd, int fd, uint32_t events) {
@@ -162,31 +166,42 @@ mf_error_t handle_new_connection(int listen_sock, int epfd) {
     return MF_ERROR_OK;
 }
 
+mf_error_t remove_connection(int epfd, int conn_fd) {
+    DEBUG_PRINT("connection closed with fd: %d\n", conn_fd);
+
+    if ((epoll_ctl(epfd, EPOLL_CTL_DEL, conn_fd, NULL)) < 0) {
+        return MF_ERROR_EPOLL_CTL;
+    }
+    close(conn_fd);
+
+    return MF_ERROR_OK;
+}
+
+mf_error_t handle_data_in(int epfd, int event_fd, struct mf_ctx *ctx) {
+    mf_error_t err;
+    if ((err = recv_and_response(event_fd, ctx)) != MF_ERROR_OK) {
+        if (err == MF_ERROR_SOCKET_CLOSED) return remove_connection(epfd, event_fd);
+        else return err;
+    }
+    return MF_ERROR_OK;
+}
+
 void *handle_event(void *in) {
     struct args *args = (struct args*) in;
     struct epoll_event event = args->event;
     int listen_sock = args->listen_sock;
     int epfd = args->epfd;
     struct mf_ctx *ctx = args->ctx;
-    mf_error_t err;
-    if (event.data.fd == listen_sock) {
-        if ((err = handle_new_connection(listen_sock, epfd)) != MF_ERROR_OK) {
-            mf_error_print(err);
-            return (void *) 1;
-        }
-    } else if (event.events & EPOLLIN) {
-        if ((recv_and_response(event.data.fd, ctx)) != 0) {
-            return (void *) 1;
-        }
-    } else if (event.events & (EPOLLRDHUP | EPOLLHUP)) {
-        DEBUG_PRINT("connection closed with fd: %d\n", event.data.fd);
 
-        epoll_ctl(epfd, EPOLL_CTL_DEL, event.data.fd, NULL);
-        close(event.data.fd);
-    } else {
-        DEBUG_PRINT("Unexpected epoll event: %d\n", event.events);
-    }
-    return 0;
+    if (event.data.fd == listen_sock) return (void *) handle_new_connection(listen_sock, epfd);
+
+    else if (event.events & EPOLLIN) return (void *) handle_data_in(epfd, event.data.fd, ctx);
+
+    else if (event.events & (EPOLLRDHUP | EPOLLHUP)) return (void *) remove_connection(epfd, event.data.fd);
+
+    else { DEBUG_PRINT("Unhandled epoll event: %04x\n", event.events); }
+
+    return (void *) MF_ERROR_OK;
 }
 
 int mf_poll(int listen_sock, struct mf_ctx *ctx) {
@@ -196,7 +211,7 @@ int mf_poll(int listen_sock, struct mf_ctx *ctx) {
     int epfd = epoll_create1(0);
 
     mf_error_t err;
-    if ((err = epoll_ctl_add(epfd, listen_sock, EPOLLIN | EPOLLOUT | EPOLLET)) != MF_ERROR_OK) {
+    if ((err = epoll_ctl_add(epfd, listen_sock, EPOLLIN | EPOLLOUT)) != MF_ERROR_OK) {
         mf_error_print(err);
         ret = 1;
         goto cleanup;
@@ -214,26 +229,46 @@ int mf_poll(int listen_sock, struct mf_ctx *ctx) {
             DEBUG_PRINT("waiting fds: %d\n", n_fds);
         }
 
-        pthread_t thread_ids[n_fds];
         for (int i = 0; i < n_fds; i++) {
             struct args args;
             args.event = events[i];
             args.listen_sock = listen_sock;
             args.epfd = epfd;
             args.ctx = ctx;
-            pthread_create(&thread_ids[i], NULL, handle_event, (void *) &args);
-        }
 
-        for (int i = 0; i < n_fds; i++) {
-            int ret_val;
-
-            pthread_join(thread_ids[i], (void **) &ret_val);
-
-            if (ret_val != 0) {
-                ret = ret_val;
+            mf_error_t res = (mf_error_t) handle_event((void *) &args);
+            if (res != MF_ERROR_OK) {
+                ret = 1;
+                ctx->error_cb(listen_sock, NULL, res);
                 goto cleanup;
             }
         }
+
+
+//        pthread_t thread_ids[n_fds];
+//        for (int i = 0; i < n_fds; i++) {
+//            struct args args;
+//            args.event = events[i];
+//            args.listen_sock = listen_sock;
+//            args.epfd = epfd;
+//            args.ctx = ctx;
+//
+//            pthread_create(&thread_ids[i], NULL, handle_event, (void *) &args);
+//            DEBUG_PRINT("Created thread %lu\n", thread_ids[i]);
+//        }
+//
+//        for (int i = 0; i < n_fds; i++) {
+//            mf_error_t ret_val;
+//
+//            pthread_join(thread_ids[i], (void **) &ret_val);
+//            DEBUG_PRINT("thread id %lu terminated with ret %d\n", thread_ids[i], ret_val);
+//
+//            if (ret_val != MF_ERROR_OK) {
+//                ret = 1;
+//                ctx->error_cb(listen_sock, NULL, ret_val);
+//                goto cleanup;
+//            }
+//        }
 
     }
 

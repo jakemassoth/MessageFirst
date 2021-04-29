@@ -5,8 +5,8 @@
 #include <pthread.h>
 #include <include/messagefirst_api.h>
 
-#define NUM_CLIENTS 1
-#define NUM_MSG 10
+#define NUM_CLIENTS 32
+#define NUM_MSG 100
 
 void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
     mf_error_print(err);
@@ -35,6 +35,7 @@ void *thread_function(void *dummy) {
         printf("could not create socket\n");
         return (void *) 1;
     }
+    printf("socket fd: %d\n", sock);
 
     if (connect(sock, (struct sockaddr*)&server_address,
                 sizeof(server_address)) < 0) {

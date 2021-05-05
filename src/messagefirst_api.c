@@ -1,10 +1,16 @@
 #include "include/messagefirst_api.h"
 #include "include/util.h"
 
-struct args {
+struct recv_args {
     struct epoll_event event;
     int listen_sock;
     int epfd;
+    struct mf_ctx *ctx;
+};
+
+struct send_args {
+    int socket;
+    struct mf_msg *msg;
     struct mf_ctx *ctx;
 };
 
@@ -100,16 +106,26 @@ mf_error_t recv_msg(int socket, struct mf_msg *msg_recv, struct mf_ctx *ctx) {
 }
 
 
-int mf_send_msg_blocking(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
+void *mf_send_msg_blocking(void *in) {
+    struct send_args *args = (struct send_args*) in;
+    struct mf_msg *msg = args->msg;
+    struct mf_ctx *ctx = args->ctx;
+    int socket = args->socket;
     mf_error_t err;
-    CB_IF_ERROR(err,send_len_and_data(socket, msg, ctx), msg, ctx)
+    if ((err = send_len_and_data(socket, msg, ctx)) != MF_ERROR_OK) {
+        return (void *) err;
+    }
 
     struct mf_msg response;
-    CB_IF_ERROR(err,recv_msg(socket, &response, ctx), &response, ctx)
+    if ((err = recv_msg(socket, &response, ctx)) != MF_ERROR_OK) {
+        return (void *) err;
+    }
 
-    CB_IF_ERROR(err,ctx->recv_cb(socket, &response), &response, ctx)
+    if ((err = ctx->recv_cb(socket, &response)) != MF_ERROR_OK) {
+        return (void *) err;
+    }
 
-    return 0;
+    return (void *) MF_ERROR_OK;
 }
 
 mf_error_t recv_and_response(int socket, struct mf_ctx *ctx) {
@@ -187,7 +203,7 @@ mf_error_t handle_data_in(int epfd, int event_fd, struct mf_ctx *ctx) {
 }
 
 void *handle_event(void *in) {
-    struct args *args = (struct args*) in;
+    struct recv_args *args = (struct recv_args*) in;
     struct epoll_event event = args->event;
     int listen_sock = args->listen_sock;
     int epfd = args->epfd;
@@ -230,7 +246,7 @@ int mf_poll(int listen_sock, struct mf_ctx *ctx) {
         }
 
         for (int i = 0; i < n_fds; i++) {
-            struct args args;
+            struct recv_args args;
             args.event = events[i];
             args.listen_sock = listen_sock;
             args.epfd = epfd;
@@ -244,32 +260,6 @@ int mf_poll(int listen_sock, struct mf_ctx *ctx) {
             }
         }
 
-
-//        pthread_t thread_ids[n_fds];
-//        for (int i = 0; i < n_fds; i++) {
-//            struct args args;
-//            args.event = events[i];
-//            args.listen_sock = listen_sock;
-//            args.epfd = epfd;
-//            args.ctx = ctx;
-//
-//            pthread_create(&thread_ids[i], NULL, handle_event, (void *) &args);
-//            DEBUG_PRINT("Created thread %lu\n", thread_ids[i]);
-//        }
-//
-//        for (int i = 0; i < n_fds; i++) {
-//            mf_error_t ret_val;
-//
-//            pthread_join(thread_ids[i], (void **) &ret_val);
-//            DEBUG_PRINT("thread id %lu terminated with ret %d\n", thread_ids[i], ret_val);
-//
-//            if (ret_val != MF_ERROR_OK) {
-//                ret = 1;
-//                ctx->error_cb(listen_sock, NULL, ret_val);
-//                goto cleanup;
-//            }
-//        }
-
     }
 
     ret = 0;
@@ -279,14 +269,27 @@ int mf_poll(int listen_sock, struct mf_ctx *ctx) {
 }
 
 int mf_send_msg(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
-    return mf_send_msg_blocking(socket, msg, ctx);
+    pthread_t tid;
+    struct send_args args;
+    args.socket = socket;
+    args.msg = msg;
+    args.ctx = ctx;
+
+    pthread_create(&tid, NULL, mf_send_msg_blocking, &args);
+    mf_error_t err;
+    pthread_join(tid, (void **) &err);
+    if (err != MF_ERROR_OK) {
+        ctx->error_cb(socket, msg, err);
+        return 1;
+    }
+    return 0;
 }
 
 mf_error_t mf_send_msg_response(int socket, struct mf_msg *msg) {
     mf_error_t err;
     struct mf_ctx *ctx = (struct mf_ctx*) malloc(sizeof(struct mf_ctx));
     assert(ctx);
-    CB_IF_ERROR(err,send_len_and_data(socket, msg, ctx), msg, ctx)
+    CB_IF_ERROR(err, send_len_and_data(socket, msg, ctx), msg, ctx)
     free(ctx);
 
     return err;

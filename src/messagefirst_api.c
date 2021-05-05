@@ -246,11 +246,12 @@ int mf_poll(int listen_sock, struct mf_ctx *ctx) {
         }
 
         for (int i = 0; i < n_fds; i++) {
-            struct recv_args args;
-            args.event = events[i];
-            args.listen_sock = listen_sock;
-            args.epfd = epfd;
-            args.ctx = ctx;
+            struct recv_args args = {
+                    .event = events[i],
+                    .listen_sock = listen_sock,
+                    .epfd = epfd,
+                    .ctx = ctx
+            };
 
             mf_error_t res = (mf_error_t) handle_event((void *) &args);
             if (res != MF_ERROR_OK) {
@@ -270,10 +271,11 @@ int mf_poll(int listen_sock, struct mf_ctx *ctx) {
 
 int mf_send_msg(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
     pthread_t tid;
-    struct send_args args;
-    args.socket = socket;
-    args.msg = msg;
-    args.ctx = ctx;
+    struct send_args args = {
+        .socket = socket,
+        .msg = msg,
+        .ctx = ctx
+    };
 
     pthread_create(&tid, NULL, mf_send_msg_blocking, &args);
     mf_error_t err;

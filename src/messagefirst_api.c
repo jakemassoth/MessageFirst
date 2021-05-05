@@ -20,14 +20,11 @@ int receive_size(int socket) {
     ssize_t len;
     for (;;) {
         len = read(socket, &payload_size, sizeof(payload_size));
-        if (len < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-            continue;
-        } else if (len <= 0) {
+        if (len < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) continue;
+        else if (len <= 0) {
             DEBUG_PRINT("recv() error: %s\n", strerror(errno));
             return len;
-        } else {
-            break;
-        }
+        } else break;
     }
 
     assert(len == sizeof(payload_size));
@@ -53,9 +50,9 @@ mf_error_t receive_variable_size(int socket, int expected, char dest[MAX_DATA_LE
             DEBUG_PRINT("recv error: %s\n", strerror(errno));
             return MF_ERROR_RECV_MSG;
         }
-        if (i == 0) {
-            return MF_ERROR_SOCKET_CLOSED;
-        }
+
+        if (i == 0) return MF_ERROR_SOCKET_CLOSED;
+
         memcpy(&buff + so_far, &p_buff, i);
 
         so_far += i;
@@ -96,9 +93,9 @@ mf_error_t recv_msg(int socket, struct mf_msg *msg_recv, struct mf_ctx *ctx) {
 
     char buff[MAX_DATA_LEN];
     memset(buff, 0, MAX_DATA_LEN);
-    if ((err = receive_variable_size(socket, expected, buff)) != MF_ERROR_OK) {
-        return err;
-    }
+
+    if ((err = receive_variable_size(socket, expected, buff)) != MF_ERROR_OK) return err;
+
     msg_recv->len = expected;
     memcpy(msg_recv->data, buff, MAX_DATA_LEN);
     DEBUG_PRINT("Message len: %d Message content: %s\n", msg_recv->len, msg_recv->data);
@@ -111,19 +108,14 @@ void *mf_send_msg_blocking(void *in) {
     struct mf_msg *msg = args->msg;
     struct mf_ctx *ctx = args->ctx;
     int socket = args->socket;
+
     mf_error_t err;
-    if ((err = send_len_and_data(socket, msg, ctx)) != MF_ERROR_OK) {
-        return (void *) err;
-    }
+    if ((err = send_len_and_data(socket, msg, ctx)) != MF_ERROR_OK) return (void *) err;
 
     struct mf_msg response;
-    if ((err = recv_msg(socket, &response, ctx)) != MF_ERROR_OK) {
-        return (void *) err;
-    }
+    if ((err = recv_msg(socket, &response, ctx)) != MF_ERROR_OK) return (void *) err;
 
-    if ((err = ctx->recv_cb(socket, &response)) != MF_ERROR_OK) {
-        return (void *) err;
-    }
+    if ((err = ctx->recv_cb(socket, &response)) != MF_ERROR_OK) return (void *) err;
 
     return (void *) MF_ERROR_OK;
 }
@@ -241,9 +233,7 @@ int mf_poll(int listen_sock, struct mf_ctx *ctx) {
             goto cleanup;
         }
 
-        if (n_fds > 0) {
-            DEBUG_PRINT("waiting fds: %d\n", n_fds);
-        }
+        if (n_fds > 0) DEBUG_PRINT("waiting fds: %d\n", n_fds);
 
         for (int i = 0; i < n_fds; i++) {
             struct recv_args args = {

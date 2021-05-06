@@ -1,10 +1,9 @@
 #include "include/messagefirst_api.h"
 #include "include/util.h"
 
-struct recv_args {
-    struct epoll_event event;
-    int listen_sock;
+struct event_args {
     int epfd;
+    int event_fd;
     struct mf_ctx *ctx;
 };
 
@@ -185,38 +184,45 @@ mf_error_t remove_connection(int epfd, int conn_fd) {
     return MF_ERROR_OK;
 }
 
-mf_error_t handle_data_in(int epfd, int event_fd, struct mf_ctx *ctx) {
+void *handle_data_in(void *args) {
+    struct event_args *arg = (struct event_args*) args;
     mf_error_t err;
-    if ((err = recv_and_response(event_fd, ctx)) != MF_ERROR_OK) {
-        if (err == MF_ERROR_SOCKET_CLOSED) return remove_connection(epfd, event_fd);
-        else return err;
+    if ((err = recv_and_response(arg->event_fd, arg->ctx)) != MF_ERROR_OK) {
+        if (err == MF_ERROR_SOCKET_CLOSED) return (void *) remove_connection(arg->epfd, arg->event_fd);
+        else return (void *) err;
     }
-    return MF_ERROR_OK;
+    return (void *) MF_ERROR_OK;
 }
 
-void *handle_event(void *in) {
-    struct recv_args *args = (struct recv_args*) in;
-    struct epoll_event event = args->event;
-    int listen_sock = args->listen_sock;
-    int epfd = args->epfd;
-    struct mf_ctx *ctx = args->ctx;
+mf_error_t handle_event(int listen_sock, int epfd, struct epoll_event event, struct mf_ctx *ctx) {
+    if (event.data.fd == listen_sock) return handle_new_connection(listen_sock, epfd);
 
-    if (event.data.fd == listen_sock) return (void *) handle_new_connection(listen_sock, epfd);
+    else if (event.events & EPOLLIN) {
+        struct event_args args = {
+                .event_fd = event.data.fd,
+                .ctx = ctx,
+                .epfd = epfd
+        };
+        if (thread_pool_submit_work((thread_func_t) handle_data_in, &args, sizeof(struct event_args), ctx->tp) != 0)
+            return MF_ERROR_RECV_MSG;
 
-    else if (event.events & EPOLLIN) return (void *) handle_data_in(epfd, event.data.fd, ctx);
+        return MF_ERROR_OK;
+    }
 
-    else if (event.events & (EPOLLRDHUP | EPOLLHUP)) return (void *) remove_connection(epfd, event.data.fd);
+    else if (event.events & (EPOLLRDHUP | EPOLLHUP)) return remove_connection(epfd, event.data.fd);
 
     else { DEBUG_PRINT("Unhandled epoll event: %04x\n", event.events); }
 
-    return (void *) MF_ERROR_OK;
+    return MF_ERROR_OK;
 }
 
 int mf_poll(int listen_sock, struct mf_ctx *ctx) {
     struct epoll_event events[MAX_EVENTS];
-    int ret = -1;
+    int ret;
 
     int epfd = epoll_create1(0);
+
+    if (ctx->tp == NULL) ctx->tp = thread_pool_init(THREADS);
 
     mf_error_t err;
     if ((err = epoll_ctl_add(epfd, listen_sock, EPOLLIN | EPOLLOUT)) != MF_ERROR_OK) {
@@ -236,44 +242,39 @@ int mf_poll(int listen_sock, struct mf_ctx *ctx) {
         if (n_fds > 0) DEBUG_PRINT("waiting fds: %d\n", n_fds);
 
         for (int i = 0; i < n_fds; i++) {
-            struct recv_args args = {
-                    .event = events[i],
-                    .listen_sock = listen_sock,
-                    .epfd = epfd,
-                    .ctx = ctx
-            };
-
-            mf_error_t res = (mf_error_t) handle_event((void *) &args);
+            mf_error_t res = handle_event(listen_sock, epfd, events[i], ctx);
             if (res != MF_ERROR_OK) {
                 ret = 1;
                 ctx->error_cb(listen_sock, NULL, res);
                 goto cleanup;
             }
         }
-
+        thread_pool_wait(ctx->tp);
     }
 
-    ret = 0;
     cleanup:
     close(epfd);
     return ret;
 }
 
 int mf_send_msg(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
-    pthread_t tid;
+//    if (ctx->tp == NULL) ctx->tp = thread_pool_init(THREADS);
     struct send_args args = {
         .socket = socket,
         .msg = msg,
         .ctx = ctx
     };
 
-    pthread_create(&tid, NULL, mf_send_msg_blocking, &args);
-    mf_error_t err;
-    pthread_join(tid, (void **) &err);
+    mf_error_t err = (mf_error_t) mf_send_msg_blocking(&args);
     if (err != MF_ERROR_OK) {
         ctx->error_cb(socket, msg, err);
         return 1;
     }
+
+//    thread_func_t p = (thread_func_t) &mf_send_msg_blocking;
+//
+//    if (thread_pool_submit_work(p, &args, sizeof(struct send_args), ctx->tp) != 0) return 1;
+
     return 0;
 }
 
@@ -285,4 +286,12 @@ mf_error_t mf_send_msg_response(int socket, struct mf_msg *msg) {
     free(ctx);
 
     return err;
+}
+
+void mf_ctx_cleanup(struct mf_ctx *ctx) {
+    thread_pool_destroy(ctx->tp);
+}
+
+void mf_wait(struct mf_ctx *ctx) {
+    thread_pool_wait(ctx->tp);
 }

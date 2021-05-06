@@ -49,10 +49,12 @@ int main(void) {
     ctx.error_cb = error_cb;
     ctx.recv_cb = recv_cb;
     ctx.timeout = 10;
+    ctx.tp = NULL;
 
     int res = mf_poll(listen_sock, &ctx);
 
     close(listen_sock);
+    mf_ctx_cleanup(&ctx);
 
     printf("messages sent: %d\n", num);
     return res;

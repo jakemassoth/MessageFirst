@@ -1,7 +1,9 @@
 #ifndef MESSAGEFIRST_MESSAGEFIRST_H
 #define MESSAGEFIRST_MESSAGEFIRST_H
 #define MAX_DATA_LEN 128
+#define THREADS 6
 #define MAX_EVENTS 32
+#include <include/thread_pool.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <netinet/in.h>
@@ -42,11 +44,11 @@ struct __attribute__((packed)) mf_ctx {
     mf_error_cb_t error_cb;
     mf_recv_cb recv_cb;
     mf_timeout_cb_t timeout_cb;
+    thread_pool_t *tp;
 };
 
 const char *mf_error_str(mf_error_t e);
 
 void mf_error_print(mf_error_t e);
-
 
 #endif //MESSAGEFIRST_MESSAGEFIRST_H

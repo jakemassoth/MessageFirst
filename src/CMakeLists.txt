@@ -1,5 +1,5 @@
 add_library(MessageFirst include/messagefirst_api.h include/messagefirst.h messagefirst_api.c
-        include/util.h messagefirst.c)
+        include/util.h messagefirst.c include/thread_pool.h thread_pool.c)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)

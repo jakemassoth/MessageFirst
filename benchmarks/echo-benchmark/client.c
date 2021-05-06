@@ -5,8 +5,8 @@
 #include <pthread.h>
 #include <include/messagefirst_api.h>
 
-#define NUM_CLIENTS 2
-#define NUM_MSG 10
+#define NUM_CLIENTS 6
+#define NUM_MSG 100
 
 void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
     mf_error_print(err);
@@ -42,26 +42,27 @@ void *thread_function(void *dummy) {
         return (void *) 1;
     }
 
-    int res = -1;
+    struct mf_ctx ctx;
+    struct mf_msg msg;
+    memset(&ctx, 0, sizeof(struct mf_ctx));
+    memset(&msg, 0, sizeof(struct mf_msg));
+    msg.len = strlen("12345678");
+    strcpy(msg.data, "12345678");
+    printf("msg len: %d, content %s\n", msg.len, msg.data);
+    ctx.error_cb = error_cb;
+    ctx.recv_cb = recv_cb;
 
     for (int i = 0; i < NUM_MSG; i++) {
-        struct mf_ctx ctx;
-        struct mf_msg msg;
-        memset(&ctx, 0, sizeof(struct mf_ctx));
-        memset(&msg, 0, sizeof(struct mf_msg));
-        msg.len = strlen("12345678");
-        strcpy(msg.data, "12345678");
-        printf("msg len: %d, content %s\n", msg.len, msg.data);
-        ctx.error_cb = error_cb;
-        ctx.recv_cb = recv_cb;
-
         printf("message num %d\n", i);
-        res = mf_send_msg(sock, &msg, &ctx);
+        int res = mf_send_msg(sock, &msg, &ctx);
+
+        if (res != 0) {
+            return (void *) 1;
+        }
     }
+
     close(sock);
-    if (res != 0) {
-        return (void *) 1;
-    }
+
     return (void *) 0;
 }
 

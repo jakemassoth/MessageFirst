@@ -7,61 +7,6 @@ struct event_args {
     struct mf_ctx *ctx;
 };
 
-struct send_args {
-    int socket;
-    struct mf_msg *msg;
-    struct mf_ctx *ctx;
-};
-
-int receive_size(int socket) {
-    int payload_size = 0;
-
-    ssize_t len;
-    for (;;) {
-        len = read(socket, &payload_size, sizeof(payload_size));
-        if (len < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) continue;
-        else if (len <= 0) {
-            DEBUG_PRINT("recv() error: %s\n", strerror(errno));
-            return len;
-        } else break;
-    }
-
-    assert(len == sizeof(payload_size));
-
-    return payload_size;
-}
-
-mf_error_t receive_variable_size(int socket, int expected, char dest[MAX_DATA_LEN]) {
-    ssize_t so_far = 0;
-
-    char p_buff[MAX_DATA_LEN];
-    char buff[MAX_DATA_LEN];
-    memset(buff, 0, MAX_DATA_LEN);
-    memset(p_buff, 0, MAX_DATA_LEN);
-
-    while (so_far < expected) {
-        ssize_t i = read(socket, &p_buff, expected);
-        if (i < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                memset(p_buff, 0, MAX_DATA_LEN);
-                continue;
-            }
-            DEBUG_PRINT("recv error: %s\n", strerror(errno));
-            return MF_ERROR_RECV_MSG;
-        }
-
-        if (i == 0) return MF_ERROR_SOCKET_CLOSED;
-
-        memcpy(&buff + so_far, &p_buff, i);
-
-        so_far += i;
-        memset(p_buff, 0, MAX_DATA_LEN);
-    }
-
-    memcpy(dest, &buff, expected);
-    return MF_ERROR_OK;
-}
-
 mf_error_t send_len_and_data(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
     DEBUG_PRINT("Sending message of len %d Message content: %s\n", msg->len, msg->data);
     ssize_t size_len;
@@ -80,50 +25,45 @@ mf_error_t send_len_and_data(int socket, struct mf_msg *msg, struct mf_ctx *ctx)
     return MF_ERROR_OK;
 }
 
-mf_error_t recv_msg(int socket, struct mf_msg *msg_recv, struct mf_ctx *ctx) {
-    mf_error_t err;
+mf_error_t recv_msg_poll(int socket, struct mf_msg *msg_recv, struct mf_ctx *ctx) {
+    ssize_t so_far = 0;
 
-    int expected;
-    if ((expected = receive_size(socket)) < 0) {
-        DEBUG_PRINT("recv error: %s\n", strerror(errno));
-        return MF_ERROR_RECV_LEN;
-    }
-    if (expected == 0) return MF_ERROR_SOCKET_CLOSED;
-
+    char temp_buff[MAX_DATA_LEN];
     char buff[MAX_DATA_LEN];
     memset(buff, 0, MAX_DATA_LEN);
+    memset(temp_buff, 0, MAX_DATA_LEN);
 
-    if ((err = receive_variable_size(socket, expected, buff)) != MF_ERROR_OK) return err;
+    for (;;) {
+        ssize_t i = read(socket, &temp_buff, MAX_DATA_LEN);
+        if (i < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                break;
+            }
+            DEBUG_PRINT("recv error: %s\n", strerror(errno));
+            return MF_ERROR_RECV_MSG;
+        }
 
-    msg_recv->len = expected;
+        if (i == 0) return MF_ERROR_SOCKET_CLOSED;
+
+        memcpy(&buff + so_far, &temp_buff, i);
+
+        so_far += i;
+        memset(temp_buff, 0, MAX_DATA_LEN);
+    }
+    if (so_far == 0) {
+        return MF_ERROR_NONBLOCKING;
+    }
+
     memcpy(msg_recv->data, buff, MAX_DATA_LEN);
     DEBUG_PRINT("Message len: %d Message content: %s\n", msg_recv->len, msg_recv->data);
-    return err;
-}
-
-
-void *mf_send_msg_blocking(void *in) {
-    struct send_args *args = (struct send_args*) in;
-    struct mf_msg *msg = args->msg;
-    struct mf_ctx *ctx = args->ctx;
-    int socket = args->socket;
-
-    mf_error_t err;
-    if ((err = send_len_and_data(socket, msg, ctx)) != MF_ERROR_OK) return (void *) err;
-
-    struct mf_msg response;
-    if ((err = recv_msg(socket, &response, ctx)) != MF_ERROR_OK) return (void *) err;
-
-    if ((err = ctx->recv_cb(socket, &response)) != MF_ERROR_OK) return (void *) err;
-
-    return (void *) MF_ERROR_OK;
+    return MF_ERROR_OK;
 }
 
 mf_error_t recv_and_response(int socket, struct mf_ctx *ctx) {
     mf_error_t err;
     struct mf_msg response;
 
-    if ((err = recv_msg(socket, &response, ctx)) != MF_ERROR_OK) {
+    if ((err = recv_msg_poll(socket, &response, ctx)) != MF_ERROR_OK) {
         return err;
     }
 
@@ -257,27 +197,6 @@ int mf_poll(int listen_sock, struct mf_ctx *ctx) {
     return ret;
 }
 
-int mf_send_msg(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
-//    if (ctx->tp == NULL) ctx->tp = thread_pool_init(THREADS);
-    struct send_args args = {
-        .socket = socket,
-        .msg = msg,
-        .ctx = ctx
-    };
-
-    mf_error_t err = (mf_error_t) mf_send_msg_blocking(&args);
-    if (err != MF_ERROR_OK) {
-        ctx->error_cb(socket, msg, err);
-        return 1;
-    }
-
-//    thread_func_t p = (thread_func_t) &mf_send_msg_blocking;
-//
-//    if (thread_pool_submit_work(p, &args, sizeof(struct send_args), ctx->tp) != 0) return 1;
-
-    return 0;
-}
-
 mf_error_t mf_send_msg_response(int socket, struct mf_msg *msg) {
     mf_error_t err;
     struct mf_ctx *ctx = (struct mf_ctx*) malloc(sizeof(struct mf_ctx));
@@ -290,8 +209,4 @@ mf_error_t mf_send_msg_response(int socket, struct mf_msg *msg) {
 
 void mf_ctx_cleanup(struct mf_ctx *ctx) {
     thread_pool_destroy(ctx->tp);
-}
-
-void mf_wait(struct mf_ctx *ctx) {
-    thread_pool_wait(ctx->tp);
 }

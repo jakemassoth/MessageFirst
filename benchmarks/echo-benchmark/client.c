@@ -6,7 +6,7 @@
 #include <include/messagefirst_api.h>
 
 #define NUM_CLIENTS 6
-#define NUM_MSG 100
+#define NUM_MSG 10
 
 void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
     mf_error_print(err);

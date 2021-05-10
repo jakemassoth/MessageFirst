@@ -37,6 +37,7 @@ struct __attribute__((packed)) mf_msg {
 
 typedef void (*mf_error_cb_t)(int, struct mf_msg*, mf_error_t err);
 typedef mf_error_t (*mf_recv_cb)(int, struct mf_msg*);
+typedef struct mf_msg (*mf_poll_resp_cb)(struct mf_msg);
 typedef mf_error_t (*mf_timeout_cb_t)(int, struct mf_msg*);
 
 struct __attribute__((packed)) mf_ctx {
@@ -44,6 +45,7 @@ struct __attribute__((packed)) mf_ctx {
     mf_error_cb_t error_cb;
     mf_recv_cb recv_cb;
     mf_timeout_cb_t timeout_cb;
+    mf_poll_resp_cb poll_resp_cb;
     thread_pool_t *tp;
 };
 

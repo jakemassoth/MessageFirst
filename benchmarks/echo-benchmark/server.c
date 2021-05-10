@@ -10,11 +10,11 @@ void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
     mf_error_print(err);
 }
 
-mf_error_t recv_cb(int socket, struct mf_msg *msg) {
+struct mf_msg poll_resp( struct mf_msg msg) {
     num++;
-    assert(strcmp(msg->data, "12345678") == 0);
-    msg->len = strlen("12345678");
-    return mf_send_msg_response(socket, msg);
+    assert(strcmp(msg.data, "12345678") == 0);
+    msg.len = strlen("12345678");
+    return msg;
 }
 
 int main(void) {
@@ -48,7 +48,7 @@ int main(void) {
 
     struct mf_ctx ctx;
     ctx.error_cb = error_cb;
-    ctx.recv_cb = recv_cb;
+    ctx.poll_resp_cb = poll_resp;
     ctx.timeout = 10;
     ctx.tp = NULL;
 

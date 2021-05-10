@@ -7,7 +7,7 @@ struct event_args {
     struct mf_ctx *ctx;
 };
 
-mf_error_t send_len_and_data(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
+mf_error_t send_len_and_data(int socket, struct mf_msg *msg) {
     DEBUG_PRINT("Sending message of len %d Message content: %s\n", msg->len, msg->data);
     ssize_t size_len;
     if ((size_len = write(socket, &msg->len, sizeof(msg->len))) < 0) {
@@ -55,19 +55,21 @@ mf_error_t recv_msg_poll(int socket, struct mf_msg *msg_recv, struct mf_ctx *ctx
     }
 
     memcpy(msg_recv->data, buff, MAX_DATA_LEN);
-    DEBUG_PRINT("Message len: %d Message content: %s\n", msg_recv->len, msg_recv->data);
+    DEBUG_PRINT("Message content: %s\n", msg_recv->data);
     return MF_ERROR_OK;
 }
 
 mf_error_t recv_and_response(int socket, struct mf_ctx *ctx) {
     mf_error_t err;
-    struct mf_msg response;
+    struct mf_msg req;
 
-    if ((err = recv_msg_poll(socket, &response, ctx)) != MF_ERROR_OK) {
+    if ((err = recv_msg_poll(socket, &req, ctx)) != MF_ERROR_OK) {
         return err;
     }
 
-    if ((err = ctx->recv_cb(socket, &response)) != MF_ERROR_OK) {
+    struct mf_msg resp = ctx->poll_resp_cb(req);
+
+    if ((err = send_len_and_data(socket, &resp)) != MF_ERROR_OK) {
         return err;
     }
 
@@ -143,7 +145,7 @@ mf_error_t handle_event(int listen_sock, int epfd, struct epoll_event event, str
                 .ctx = ctx,
                 .epfd = epfd
         };
-        if (thread_pool_submit_work((thread_func_t) handle_data_in, &args, sizeof(struct event_args), ctx->tp) != 0)
+        if (thread_pool_submit_work(handle_data_in, &args, sizeof(struct event_args), ctx->tp) != 0)
             return MF_ERROR_RECV_MSG;
 
         return MF_ERROR_OK;
@@ -195,16 +197,6 @@ int mf_poll(int listen_sock, struct mf_ctx *ctx) {
     cleanup:
     close(epfd);
     return ret;
-}
-
-mf_error_t mf_send_msg_response(int socket, struct mf_msg *msg) {
-    mf_error_t err;
-    struct mf_ctx *ctx = (struct mf_ctx*) malloc(sizeof(struct mf_ctx));
-    assert(ctx);
-    CB_IF_ERROR(err, send_len_and_data(socket, msg, ctx), msg, ctx)
-    free(ctx);
-
-    return err;
 }
 
 void mf_ctx_cleanup(struct mf_ctx *ctx) {

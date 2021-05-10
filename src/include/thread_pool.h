@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <string.h>
 
-typedef void (*thread_func_t)(void*);
+typedef void* (*thread_func_t)(void*);
 
 typedef struct thread_work {
     thread_func_t func;

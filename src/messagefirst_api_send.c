@@ -79,14 +79,64 @@ mf_error_t send_data(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
     return MF_ERROR_OK;
 }
 
-int mf_send_msg(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
-    mf_error_t err;
-    if ((err = send_data(socket, msg, ctx)) != MF_ERROR_OK) return err;
-
-    struct mf_msg response;
-    if ((err = recv_msg(socket, &response, ctx)) != MF_ERROR_OK) return err;
-
-    if ((err = ctx->recv_cb(socket, &response)) != MF_ERROR_OK) return err;
+mf_error_t ctx_send_verify(struct mf_ctx *ctx) {
+    if (!ctx) return MF_ERROR_NULL_CTX;
+    if (!ctx->recv_cb) return MF_ERROR_NO_RECV_CB;
+    if (!ctx->timeout_cb) return MF_ERROR_NO_TIMEOUT_CB;
 
     return MF_ERROR_OK;
+}
+
+int set_timeout(int socket, int timeout) {
+    struct timeval tv;
+    memset(&tv, 0, sizeof(struct timeval));
+    tv.tv_sec = timeout;
+    tv.tv_usec = 0;
+
+    if (setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) != 0) {
+        return errno;
+    }
+    return 0;
+}
+
+int mf_send_msg(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
+    mf_error_t err;
+
+    if ((err = ctx_send_verify(ctx)) != MF_ERROR_OK) {
+        mf_error_print(err);
+        return -1;
+    }
+
+    if (ctx->timeout > -1) {
+        if (set_timeout(socket, ctx->timeout) != 0) {
+            perror("setsockopt()");
+        }
+    }
+
+    if ((err = send_data(socket, msg, ctx)) != MF_ERROR_OK) {
+        mf_error_print(err);
+        return -1;
+    }
+
+    struct mf_msg response;
+    if ((err = recv_msg(socket, &response, ctx)) != MF_ERROR_OK) {
+        mf_error_print(err);
+        return -1;
+    }
+
+    if ((err = ctx->recv_cb(socket, &response)) != MF_ERROR_OK) {
+        mf_error_print(err);
+        return -1;
+    }
+
+    return 0;
+}
+
+
+int mf_ctx_send_init(struct mf_ctx *ctx, int timeout, mf_timeout_cb_t timeout_cb, mf_recv_cb recv_cb) {
+    ctx->timeout = timeout;
+    ctx->timeout_cb = timeout_cb;
+    ctx->recv_cb = recv_cb;
+
+    return 0;
 }

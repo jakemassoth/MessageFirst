@@ -18,6 +18,9 @@ mf_error_t recv_cb(int socket, struct mf_msg *msg) {
     return MF_ERROR_OK;
 }
 
+void timeout_cb(int socket, struct mf_msg *msg) {}
+
+
 void *thread_function(void *dummy) {
     const char* server_name = "localhost";
     const int server_port = 8877;
@@ -43,14 +46,18 @@ void *thread_function(void *dummy) {
     }
 
     struct mf_ctx ctx;
-    struct mf_msg msg;
     memset(&ctx, 0, sizeof(struct mf_ctx));
+    int timeout = -1;
+
+    if (mf_ctx_send_init(&ctx, timeout, timeout_cb, recv_cb) != 0) {
+        return (void *) -1;
+    }
+
+    struct mf_msg msg;
     memset(&msg, 0, sizeof(struct mf_msg));
     msg.len = strlen("12345678");
     strcpy(msg.data, "12345678");
     printf("msg len: %d, content %s\n", msg.len, msg.data);
-    ctx.error_cb = error_cb;
-    ctx.recv_cb = recv_cb;
 
     for (int i = 0; i < NUM_MSG; i++) {
         printf("message num %d\n", i);

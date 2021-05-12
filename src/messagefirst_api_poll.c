@@ -25,7 +25,7 @@ mf_error_t send_len_and_data(int socket, struct mf_msg *msg) {
     return MF_ERROR_OK;
 }
 
-mf_error_t recv_msg_poll(int socket, struct mf_msg *msg_recv, struct mf_ctx *ctx) {
+mf_error_t recv_msg_poll(int socket, struct mf_msg *msg_recv) {
     ssize_t so_far = 0;
 
     char temp_buff[MAX_DATA_LEN];
@@ -63,7 +63,7 @@ mf_error_t recv_and_response(int socket, struct mf_ctx *ctx) {
     mf_error_t err;
     struct mf_msg req;
 
-    if ((err = recv_msg_poll(socket, &req, ctx)) != MF_ERROR_OK) {
+    if ((err = recv_msg_poll(socket, &req)) != MF_ERROR_OK) {
         return err;
     }
 
@@ -121,7 +121,10 @@ mf_error_t remove_connection(int epfd, int conn_fd) {
     if ((epoll_ctl(epfd, EPOLL_CTL_DEL, conn_fd, NULL)) < 0) {
         return MF_ERROR_EPOLL_CTL;
     }
-    close(conn_fd);
+
+    if (close(conn_fd) < 0) {
+        return MF_ERROR_CLOSE_FAILED;
+    }
 
     return MF_ERROR_OK;
 }
@@ -131,7 +134,10 @@ void *handle_data_in(void *args) {
     mf_error_t err;
     if ((err = recv_and_response(arg->event_fd, arg->ctx)) != MF_ERROR_OK) {
         if (err == MF_ERROR_SOCKET_CLOSED) return (void *) remove_connection(arg->epfd, arg->event_fd);
-        else return (void *) err;
+        else {
+            arg->ctx->error_cb(arg->event_fd, NULL, err);
+            return (void *) err;
+        }
     }
     return (void *) MF_ERROR_OK;
 }
@@ -158,15 +164,28 @@ mf_error_t handle_event(int listen_sock, int epfd, struct epoll_event event, str
     return MF_ERROR_OK;
 }
 
+mf_error_t ctx_poll_verify(struct mf_ctx *ctx) {
+    if (!ctx) return MF_ERROR_NULL_CTX;
+    if (!ctx->tp) return MF_ERROR_NO_THREAD_POOL;
+    if (!ctx->error_cb) return MF_ERROR_NO_ERROR_CB;
+    if (!ctx->poll_resp_cb) return MF_ERROR_NO_POLL_CB;
+    if (!ctx->timeout_cb) return MF_ERROR_NO_TIMEOUT_CB;
+
+    return MF_ERROR_OK;
+}
+
 int mf_poll(int listen_sock, struct mf_ctx *ctx) {
     struct epoll_event events[MAX_EVENTS];
     int ret;
+    mf_error_t err;
+
+    if ((err = ctx_poll_verify(ctx)) != MF_ERROR_OK) {
+        mf_error_print(err);
+        return -1;
+    }
 
     int epfd = epoll_create1(0);
 
-    if (ctx->tp == NULL) ctx->tp = thread_pool_init(THREADS);
-
-    mf_error_t err;
     if ((err = epoll_ctl_add(epfd, listen_sock, EPOLLIN | EPOLLOUT)) != MF_ERROR_OK) {
         mf_error_print(err);
         ret = 1;
@@ -199,6 +218,20 @@ int mf_poll(int listen_sock, struct mf_ctx *ctx) {
     return ret;
 }
 
+int mf_ctx_poll_init(struct mf_ctx *ctx,  int timeout, mf_error_cb_t error_cb, mf_timeout_cb_t timeout_cb,
+        mf_poll_resp_cb poll_resp_cb, int num_threads) {
+    ctx->tp = thread_pool_init(num_threads);
+    if (!ctx->tp) {
+        return -1;
+    }
+    ctx->timeout = timeout;
+    ctx->error_cb = error_cb;
+    ctx->timeout_cb = timeout_cb;
+    ctx->poll_resp_cb = poll_resp_cb;
+
+    return 0;
+}
+
 void mf_ctx_cleanup(struct mf_ctx *ctx) {
-    thread_pool_destroy(ctx->tp);
+    if (ctx->tp) thread_pool_destroy(ctx->tp);
 }

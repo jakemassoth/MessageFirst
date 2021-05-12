@@ -12,7 +12,14 @@ const char *mf_error_str(mf_error_t e) {
             "MF_ERROR_RECV_MSG",
             "MF_ERROR_SOCKET_CLOSED",
             "MF_ERROR_EPOLL_CTL",
-            "MF_ERROR_NONBLOCKING"
+            "MF_ERROR_NONBLOCKING",
+            "MF_ERROR_NULL_CTX",
+            "MF_ERROR_NO_THREAD_POOL",
+            "MF_ERROR_NO_ERROR_CB",
+            "MF_ERROR_NO_POLL_CB",
+            "MF_ERROR_NO_TIMEOUT_CB",
+            "MF_ERROR_NO_RECV_CB",
+            "MF_ERROR_CLOSE_FAILED"
     };
 
     const char *str = NULL;

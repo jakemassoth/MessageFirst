@@ -26,8 +26,15 @@ typedef enum mf_error_e {
     MF_ERROR_SOCKET_CLOSED = 4,
     MF_ERROR_EPOLL_CTL = 5,
     MF_ERROR_NONBLOCKING = 6,
+    MF_ERROR_NULL_CTX = 7,
+    MF_ERROR_NO_THREAD_POOL = 8,
+    MF_ERROR_NO_ERROR_CB = 9,
+    MF_ERROR_NO_POLL_CB = 10,
+    MF_ERROR_NO_TIMEOUT_CB = 11,
+    MF_ERROR_NO_RECV_CB = 12,
+    MF_ERROR_CLOSE_FAILED = 13,
 
-    MF_ERROR_COUNT = 7
+    MF_ERROR_COUNT = 14
 } mf_error_t;
 
 struct __attribute__((packed)) mf_msg {
@@ -38,7 +45,7 @@ struct __attribute__((packed)) mf_msg {
 typedef void (*mf_error_cb_t)(int, struct mf_msg*, mf_error_t err);
 typedef mf_error_t (*mf_recv_cb)(int, struct mf_msg*);
 typedef struct mf_msg (*mf_poll_resp_cb)(struct mf_msg);
-typedef mf_error_t (*mf_timeout_cb_t)(int, struct mf_msg*);
+typedef void (*mf_timeout_cb_t)(int, struct mf_msg*);
 
 struct __attribute__((packed)) mf_ctx {
     int timeout;

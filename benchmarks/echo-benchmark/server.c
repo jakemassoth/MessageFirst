@@ -10,12 +10,14 @@ void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
     mf_error_print(err);
 }
 
-struct mf_msg poll_resp( struct mf_msg msg) {
+struct mf_msg poll_resp(struct mf_msg msg) {
     num++;
     assert(strcmp(msg.data, "12345678") == 0);
     msg.len = strlen("12345678");
     return msg;
 }
+
+void timeout_cb(int socket, struct mf_msg *msg) {}
 
 int main(void) {
     int SERVER_PORT = 8877;
@@ -47,10 +49,11 @@ int main(void) {
     }
 
     struct mf_ctx ctx;
-    ctx.error_cb = error_cb;
-    ctx.poll_resp_cb = poll_resp;
-    ctx.timeout = 10;
-    ctx.tp = NULL;
+    int timeout = -1;
+    int num_threads = 6;
+    if (mf_ctx_poll_init(&ctx, timeout, error_cb, timeout_cb, poll_resp, num_threads) != 0) {
+        return -1;
+    }
 
     int res = mf_poll(listen_sock, &ctx);
 

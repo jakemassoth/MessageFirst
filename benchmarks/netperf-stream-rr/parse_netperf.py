@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     rr_experiements = []
     for size in message_sizes:
-        rr_experiements.append([f'TCP_RR {size}B', f'-r {size},{size}'])
+        rr_experiements.append(['TCP_RR {}B'.format(size), '-r {},{}'.format(size, size)])
 
     print(rr_experiements)
 

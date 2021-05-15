@@ -1,5 +1,6 @@
 import subprocess
 import pandas as pd
+import sys
 
 
 def netperf_benchmark(host, test, netperf_global_args, netperf_test_args=None):
@@ -76,8 +77,9 @@ def parse_to_df(line, test_name):
 
 
 if __name__ == '__main__':
+    host = sys.argv[1]
+    assert host is not None
     global_args = '-l 30 -c -C -f K'
-    host = '127.0.0.1'
     message_sizes = [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
 
     rr_experiements = []

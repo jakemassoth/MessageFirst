@@ -66,3 +66,6 @@ Mkfile.old
 dkms.conf
 
 *.cbp
+
+# python stuff
+venv

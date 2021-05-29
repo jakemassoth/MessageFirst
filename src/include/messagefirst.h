@@ -1,6 +1,6 @@
 #ifndef MESSAGEFIRST_MESSAGEFIRST_H
 #define MESSAGEFIRST_MESSAGEFIRST_H
-#define MAX_DATA_LEN 128
+#define MAX_DATA_LEN 16384
 #define THREADS 6
 #define MAX_EVENTS 32
 #include <include/thread_pool.h>
@@ -43,14 +43,12 @@ struct __attribute__((packed)) mf_msg {
 };
 
 typedef void (*mf_error_cb_t)(int, struct mf_msg*, mf_error_t err);
-typedef mf_error_t (*mf_recv_cb)(int, struct mf_msg*);
 typedef struct mf_msg (*mf_poll_resp_cb)(struct mf_msg);
 typedef void (*mf_timeout_cb_t)(int, struct mf_msg*);
 
 struct __attribute__((packed)) mf_ctx {
     int timeout;
     mf_error_cb_t error_cb;
-    mf_recv_cb recv_cb;
     mf_timeout_cb_t timeout_cb;
     mf_poll_resp_cb poll_resp_cb;
     thread_pool_t *tp;

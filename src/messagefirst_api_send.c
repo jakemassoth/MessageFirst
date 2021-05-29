@@ -46,7 +46,7 @@ mf_error_t receive_variable_size(int socket, int expected, char dest[MAX_DATA_LE
     return MF_ERROR_OK;
 }
 
-mf_error_t recv_msg(int socket, struct mf_msg *msg_recv, struct mf_ctx *ctx) {
+mf_error_t recv_msg(int socket, struct mf_msg *msg_recv) {
     mf_error_t err;
 
     int expected;
@@ -68,7 +68,7 @@ mf_error_t recv_msg(int socket, struct mf_msg *msg_recv, struct mf_ctx *ctx) {
 }
 
 
-mf_error_t send_data(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
+mf_error_t send_data(int socket, struct mf_msg *msg) {
     DEBUG_PRINT("Sending message of len %d Message content: %s\n", msg->len, msg->data);
     ssize_t len;
     if ((len = write(socket, &msg->data, msg->len)) < 0) {
@@ -79,13 +79,6 @@ mf_error_t send_data(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
     return MF_ERROR_OK;
 }
 
-mf_error_t ctx_send_verify(struct mf_ctx *ctx) {
-    if (!ctx) return MF_ERROR_NULL_CTX;
-    if (!ctx->recv_cb) return MF_ERROR_NO_RECV_CB;
-    if (!ctx->timeout_cb) return MF_ERROR_NO_TIMEOUT_CB;
-
-    return MF_ERROR_OK;
-}
 
 int set_timeout(int socket, int timeout) {
     struct timeval tv;
@@ -99,44 +92,27 @@ int set_timeout(int socket, int timeout) {
     return 0;
 }
 
-int mf_send_msg(int socket, struct mf_msg *msg, struct mf_ctx *ctx) {
+int mf_send_msg(int socket, struct mf_msg *msg_send, struct mf_msg *msg_recv, int timeout) {
     mf_error_t err;
 
-    if ((err = ctx_send_verify(ctx)) != MF_ERROR_OK) {
-        mf_error_print(err);
-        return -1;
-    }
-
-    if (ctx->timeout > -1) {
-        if (set_timeout(socket, ctx->timeout) != 0) {
+    if (timeout > -1) {
+        if (set_timeout(socket, timeout) != 0) {
             perror("setsockopt()");
         }
     }
 
-    if ((err = send_data(socket, msg, ctx)) != MF_ERROR_OK) {
+    if ((err = send_data(socket, msg_send)) != MF_ERROR_OK) {
         mf_error_print(err);
         return -1;
     }
 
     struct mf_msg response;
-    if ((err = recv_msg(socket, &response, ctx)) != MF_ERROR_OK) {
+    if ((err = recv_msg(socket, &response)) != MF_ERROR_OK) {
         mf_error_print(err);
         return -1;
     }
 
-    if ((err = ctx->recv_cb(socket, &response)) != MF_ERROR_OK) {
-        mf_error_print(err);
-        return -1;
-    }
-
-    return 0;
-}
-
-
-int mf_ctx_send_init(struct mf_ctx *ctx, int timeout, mf_timeout_cb_t timeout_cb, mf_recv_cb recv_cb) {
-    ctx->timeout = timeout;
-    ctx->timeout_cb = timeout_cb;
-    ctx->recv_cb = recv_cb;
+    memcpy(msg_recv, &response, response.len);
 
     return 0;
 }

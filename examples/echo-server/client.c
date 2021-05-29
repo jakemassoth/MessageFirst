@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <include/messagefirst_api.h>
 
-int main(void) {
-    const char* server_name = "localhost";
-    const int server_port = 8877;
+int main(int argc, char *argv[]) {
+    assert(argc == 3);
+    const char* server_name = argv[1];
+    const int server_port = atoi(argv[2]);
 
     struct sockaddr_in server_address;
     memset(&server_address, 0, sizeof(server_address));

@@ -8,19 +8,6 @@
 #define NUM_CLIENTS 6
 #define NUM_MSG 10
 
-void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
-    mf_error_print(err);
-}
-
-mf_error_t recv_cb(int socket, struct mf_msg *msg) {
-    printf("recv callback!\n");
-    assert(strcmp(msg->data, "12345678") == 0);
-    return MF_ERROR_OK;
-}
-
-void timeout_cb(int socket, struct mf_msg *msg) {}
-
-
 void *thread_function(void *dummy) {
     const char* server_name = "localhost";
     const int server_port = 8877;
@@ -45,15 +32,11 @@ void *thread_function(void *dummy) {
         return (void *) 1;
     }
 
-    struct mf_ctx ctx;
-    memset(&ctx, 0, sizeof(struct mf_ctx));
     int timeout = -1;
 
-    if (mf_ctx_send_init(&ctx, timeout, timeout_cb, recv_cb) != 0) {
-        return (void *) -1;
-    }
-
     struct mf_msg msg;
+    struct mf_msg msg_recv;
+
     memset(&msg, 0, sizeof(struct mf_msg));
     msg.len = strlen("12345678");
     strcpy(msg.data, "12345678");
@@ -61,11 +44,14 @@ void *thread_function(void *dummy) {
 
     for (int i = 0; i < NUM_MSG; i++) {
         printf("message num %d\n", i);
-        int res = mf_send_msg(sock, &msg, &ctx);
+        memset(&msg_recv, 0, sizeof(struct mf_msg));
+        int res = mf_send_msg(sock, &msg, &msg_recv, timeout);
 
         if (res != 0) {
             return (void *) 1;
         }
+
+        assert(strncmp(msg_recv.data, msg.data, msg.len) == 0);
     }
 
     close(sock);

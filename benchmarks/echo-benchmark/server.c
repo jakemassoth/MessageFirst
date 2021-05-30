@@ -21,6 +21,7 @@ struct mf_ctx ctx;
 int listen_sock;
 
 void term(int signum) {
+    printf("sigterm\n");
     close(listen_sock);
     mf_ctx_cleanup(&ctx);
 }

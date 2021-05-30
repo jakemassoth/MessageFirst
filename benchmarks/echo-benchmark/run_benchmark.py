@@ -73,7 +73,7 @@ def run_single_threaded_on_das(port, num_bytes, node1, node2):
     ip_num = node1.strip('node')
     ip_num = ip_num.lstrip('0')
     host = f'10.149.0.{ip_num}'
-    print(host)
+    print(f'running server on {host}:{port}')
 
     server = subprocess.Popen(f'ssh {node1} "{path_server} {port}"', shell=True)
 
@@ -98,11 +98,13 @@ if __name__ == '__main__':
     test_length = 30
     records = []
     on_das = (len(sys.argv) == 3)
+    start_port = 8877
     for size in message_sizes:
         print(f'Running benchmark for message size {size}')
         if on_das:
             print('Running on DAS')
-            num_transactions = run_single_threaded_on_das('8877', size, sys.argv[1], sys.argv[2])
+            num_transactions = run_single_threaded_on_das(str(random.randrange(1000, 9999)), size, sys.argv[1], sys.argv[2])
+            start_port += 1  # increase the port each time so we don't conflict ports
         else:
             print('Running Locally')
             num_transactions = run_single_threaded('localhost', '8877', size)

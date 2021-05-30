@@ -2,7 +2,7 @@ import subprocess
 import os
 import random
 import sys
-
+import time
 import pandas
 import matplotlib.pyplot as plt
 
@@ -49,6 +49,8 @@ def run_single_threaded(host, port, num_bytes):
     path_server = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/echo-benchmark-server'
 
     server = subprocess.Popen([path_server, port])
+
+    time.sleep(5)
 
     data = gen_bytes(num_bytes)
     proc = subprocess.Popen([path_client, host, port, str(num_bytes), data], stdout=subprocess.PIPE,
@@ -99,13 +101,12 @@ if __name__ == '__main__':
     test_length = 30
     records = []
     on_das = (len(sys.argv) == 3)
-    start_port = 8877
+    
     for size in message_sizes:
         print(f'Running benchmark for message size {size}')
         if on_das:
             print('Running on DAS')
             num_transactions = run_single_threaded_on_das(str(random.randrange(1000, 9999)), size, sys.argv[1], sys.argv[2])
-            start_port += 1  # increase the port each time so we don't conflict ports
         else:
             print('Running Locally')
             num_transactions = run_single_threaded('localhost', '8877', size)

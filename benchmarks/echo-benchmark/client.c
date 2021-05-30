@@ -78,8 +78,8 @@ int main(int argc, char *argv[]) {
         }
         // sanity checks
 //        fprintf(stderr, "%d\n", msg_recv.len);
-        assert(msg_recv.len == msg.len);
-        assert(strncmp(msg_recv.data, msg.data, msg.len) == 0);
+//        assert(msg_recv.len == msg.len);
+//        assert(strncmp(msg_recv.data, msg.data, msg.len) == 0);
 
         total++;
     }

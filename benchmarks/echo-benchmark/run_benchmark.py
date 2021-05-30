@@ -66,14 +66,19 @@ def run_single_threaded(host, port, num_bytes):
     return int(res)
 
 
-def run_single_threaded_on_das(host, port, num_bytes, node1, node2):
+def run_single_threaded_on_das(port, num_bytes, node1, node2):
     path_client = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/echo-benchmark-client'
     path_server = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/echo-benchmark-server'
+
+    ip_num = node1.strip('node')
+    ip_num = ip_num.lstrip('0')
+    host = f'10.149.0.{ip_num}'
+    print(host)
 
     server = subprocess.Popen(f'ssh {node1} {path_server}', shell=True)
 
     data = gen_bytes(num_bytes)
-    proc = subprocess.Popen(f'ssh {node2} {path_client} {host} {port} {num_bytes} {data}', stdout=subprocess.PIPE,
+    proc = subprocess.Popen(f'ssh {node2} "{path_client} {host} {port} {num_bytes} {data}"', stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, shell=True)
     stdout, stderr = proc.communicate(timeout=35)
 
@@ -96,8 +101,7 @@ if __name__ == '__main__':
     for size in message_sizes:
         if on_das:
             print('Running on DAS')
-            host = f'10.149.0.{sys.argv[1]}'
-            num_transactions = run_single_threaded_on_das(host, '8877', size, sys.argv[1], sys.argv[2])
+            num_transactions = run_single_threaded_on_das('8877', size, sys.argv[1], sys.argv[2])
         else:
             print('Running Locally')
             num_transactions = run_single_threaded('localhost', '8877', size)

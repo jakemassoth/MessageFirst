@@ -7,7 +7,7 @@
 #include <sys/time.h>
 #include <signal.h>
 
-int total;
+int total = 0;
 int sock;
 
 void timer_handler(int signum) {

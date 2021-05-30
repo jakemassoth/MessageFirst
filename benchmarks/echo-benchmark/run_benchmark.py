@@ -79,6 +79,8 @@ def run_single_threaded_on_das(port, num_bytes, node1, node2):
 
     server = subprocess.Popen(f'ssh {node1} "{path_server} {port}"', shell=True)
 
+    time.sleep(5)
+
     data = gen_bytes(num_bytes)
     proc = subprocess.Popen(f'ssh {node2} "{path_client} {host} {port} {num_bytes} {data}"', stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, shell=True)
@@ -101,7 +103,7 @@ if __name__ == '__main__':
     test_length = 30
     records = []
     on_das = (len(sys.argv) == 3)
-    
+
     for size in message_sizes:
         print(f'Running benchmark for message size {size}')
         if on_das:

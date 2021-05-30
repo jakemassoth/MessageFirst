@@ -98,14 +98,21 @@ if __name__ == '__main__':
     test_length = 30
     records = []
     on_das = (len(sys.argv) == 3)
+    start_port = 8877
     for size in message_sizes:
+        print(f'Running benchmark for message size {size}')
         if on_das:
             print('Running on DAS')
-            num_transactions = run_single_threaded_on_das('8877', size, sys.argv[1], sys.argv[2])
+            num_transactions = run_single_threaded_on_das(str(start_port), size, sys.argv[1], sys.argv[2])
+            start_port += 1  # increase the port each time so we don't conflict ports
         else:
             print('Running Locally')
             num_transactions = run_single_threaded('localhost', '8877', size)
+
         thruput = calc_thruput(num_transactions, size, test_length)
+
+        print(f'Thruput: {thruput}, transactions: {num_transactions}')
+
         res = {
             'Message Size': size,
             'Num Transactions': num_transactions,

@@ -9,8 +9,6 @@ void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
 }
 
 struct mf_msg poll_resp(struct mf_msg msg) {
-    assert(strcmp(msg.data, "12345678") == 0);
-    msg.len = strlen("12345678");
     return msg;
 }
 

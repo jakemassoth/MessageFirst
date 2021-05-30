@@ -6,7 +6,7 @@
 #include <include/messagefirst_api.h>
 
 #define NUM_CLIENTS 6
-#define NUM_MSG 10
+#define NUM_MSG 1000
 
 void *thread_function(void *dummy) {
     const char* server_name = "localhost";

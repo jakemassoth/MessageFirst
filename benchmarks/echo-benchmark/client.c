@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
 
     sigaction(SIGALRM, &sa, NULL);
 
-    timer.it_value.tv_sec = 30;
+    timer.it_value.tv_sec = 15;
     timer.it_value.tv_usec = 0;
 
     timer.it_interval.tv_sec = 0;

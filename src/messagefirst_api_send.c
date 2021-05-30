@@ -113,6 +113,7 @@ int mf_send_msg(int socket, struct mf_msg *msg_send, struct mf_msg *msg_recv, in
     }
 
     memcpy(msg_recv, &response, response.len);
+    msg_recv->len = response.len;
 
     return 0;
 }

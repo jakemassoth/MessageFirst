@@ -54,8 +54,9 @@ mf_error_t recv_msg_poll(int socket, struct mf_msg *msg_recv) {
         return MF_ERROR_NONBLOCKING;
     }
 
-    memcpy(msg_recv->data, buff, MAX_DATA_LEN);
-    DEBUG_PRINT("Message content: %s\n", msg_recv->data);
+    memcpy(msg_recv->data, buff, so_far);
+    msg_recv->len = so_far;
+    DEBUG_PRINT("Message content: %s, len %d\n", msg_recv->data, msg_recv->len);
     return MF_ERROR_OK;
 }
 
@@ -210,7 +211,7 @@ int mf_poll(int listen_sock, struct mf_ctx *ctx) {
                 goto cleanup;
             }
         }
-        thread_pool_wait(ctx->tp);
+//        thread_pool_wait(ctx->tp);
     }
 
     cleanup:

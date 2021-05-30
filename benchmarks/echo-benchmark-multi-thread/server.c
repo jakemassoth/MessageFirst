@@ -4,19 +4,20 @@
 #include <unistd.h>
 #include <include/messagefirst_api.h>
 
+int num = 0;
+
 void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
     mf_error_print(err);
 }
 
 struct mf_msg poll_resp(struct mf_msg msg) {
+    num++;
     assert(strcmp(msg.data, "12345678") == 0);
     msg.len = strlen("12345678");
     return msg;
 }
 
-void timeout_cb(int socket, struct mf_msg *msg) {
-    fprintf(stderr, "MessageFirst timeout on socket %d with msg content %s", socket, msg->data);
-}
+void timeout_cb(int socket, struct mf_msg *msg) {}
 
 int main(void) {
     int SERVER_PORT = 8877;
@@ -31,19 +32,19 @@ int main(void) {
 
     int listen_sock;
     if ((listen_sock = socket(PF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) < 0) {
-        perror("socket()");
+        printf("could not create listen socket\n");
         return 1;
     }
 
     if ((bind(listen_sock, (struct sockaddr *)&server_address,
               sizeof(server_address))) < 0) {
-        perror("bind()");
+        printf("could not bind socket\n");
         return 1;
     }
 
     int wait_size = 32;
     if (listen(listen_sock, wait_size) < 0) {
-        perror("listen()");
+        printf("could not open socket for listening\n");
         return 1;
     }
 
@@ -59,5 +60,6 @@ int main(void) {
     close(listen_sock);
     mf_ctx_cleanup(&ctx);
 
+    printf("messages sent: %d\n", num);
     return res;
 }

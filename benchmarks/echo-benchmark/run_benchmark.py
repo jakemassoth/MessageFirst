@@ -48,14 +48,14 @@ def run_single_threaded(host, port, num_bytes):
     path_client = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/echo-benchmark-client'
     path_server = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/echo-benchmark-server'
 
-    server = subprocess.Popen([path_server])
+    server = subprocess.Popen([path_server, port])
 
     data = gen_bytes(num_bytes)
     proc = subprocess.Popen([path_client, host, port, str(num_bytes), data], stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
     stdout, stderr = proc.communicate(timeout=35)
 
-    server.kill()
+    server.terminate()
     print(stderr)
 
     res = str(stdout)
@@ -75,14 +75,14 @@ def run_single_threaded_on_das(port, num_bytes, node1, node2):
     host = f'10.149.0.{ip_num}'
     print(host)
 
-    server = subprocess.Popen(f'ssh {node1} {path_server}', shell=True)
+    server = subprocess.Popen(f'ssh {node1} "{path_server} {port}"', shell=True)
 
     data = gen_bytes(num_bytes)
     proc = subprocess.Popen(f'ssh {node2} "{path_client} {host} {port} {num_bytes} {data}"', stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, shell=True)
     stdout, stderr = proc.communicate(timeout=35)
 
-    server.kill()
+    server.terminate()
     print(stderr)
 
     res = str(stdout)

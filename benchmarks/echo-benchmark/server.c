@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 #include <include/messagefirst_api.h>
 
 void error_cb(int socket, struct mf_msg *msg, mf_error_t err) {
@@ -16,8 +17,23 @@ void timeout_cb(int socket, struct mf_msg *msg) {
     fprintf(stderr, "MessageFirst timeout on socket %d with msg content %s", socket, msg->data);
 }
 
-int main(void) {
-    int SERVER_PORT = 8877;
+struct mf_ctx ctx;
+int listen_sock;
+
+void term(int signum) {
+    close(listen_sock);
+    mf_ctx_cleanup(&ctx);
+}
+
+int main(int argc, char *argv[]) {
+    assert(argc == 2);
+
+    struct sigaction action;
+    memset(&action, 0, sizeof(action));
+    action.sa_handler = term;
+    sigaction(SIGTERM, &action, NULL);
+
+    int SERVER_PORT = atoi(argv[1]);
 
     struct sockaddr_in server_address;
     memset(&server_address, 0, sizeof(server_address));
@@ -27,7 +43,6 @@ int main(void) {
 
     server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    int listen_sock;
     if ((listen_sock = socket(PF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) < 0) {
         perror("socket()");
         return 1;
@@ -45,7 +60,6 @@ int main(void) {
         return 1;
     }
 
-    struct mf_ctx ctx;
     int timeout = -1;
     int num_threads = 6;
     if (mf_ctx_poll_init(&ctx, timeout, error_cb, timeout_cb, poll_resp, num_threads) != 0) {

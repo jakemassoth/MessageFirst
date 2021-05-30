@@ -83,7 +83,7 @@ def run_single_threaded_on_das(port, num_bytes, node1, node2):
     stdout, stderr = proc.communicate(timeout=35)
 
     server.terminate()
-    print('stderr' + stderr)
+    print('stderr' + str(stderr))
 
     res = str(stdout)
     print('stdout:' + res)

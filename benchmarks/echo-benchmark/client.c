@@ -60,15 +60,14 @@ int main(int argc, char *argv[]) {
 
     sigaction(SIGALRM, &sa, NULL);
 
-    timer.it_value.tv_sec = 15;
+    timer.it_value.tv_sec = 30;
     timer.it_value.tv_usec = 0;
 
     timer.it_interval.tv_sec = 0;
     timer.it_interval.tv_usec = 0;
-
-    setitimer(ITIMER_REAL, &timer, NULL);
     int res;
 
+    setitimer(ITIMER_REAL, &timer, NULL);
     for (;;) {
         memset(&msg_recv, 0, sizeof(struct mf_msg));
         res = mf_send_msg(sock, &msg, &msg_recv, timeout);

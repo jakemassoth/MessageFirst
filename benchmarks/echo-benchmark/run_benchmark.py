@@ -70,11 +70,11 @@ def run_single_threaded(host, port, num_bytes):
 
 
 def get_numa_domain_network_card(node):
-    proc = subprocess.Popen(f'ssh {node} cat "/sys/class/net/ib0/device/numa_node"', shell=True)
+    proc = subprocess.Popen(f'ssh {node} "cat /sys/class/net/ib0/device/numa_node"', shell=True)
     stdout, stderr = proc.communicate()
 
     res = str(stdout)
-    print('stdout' + res)
+    print('stdout' + stdout)
     res = res.split('\n')
     res = res[0].split('\\n')
     res = res[0].strip("b'")

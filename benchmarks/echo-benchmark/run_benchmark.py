@@ -11,8 +11,9 @@ def plot_message_size_vs_throughput(df):
     plt.bar('Message Size', 'Throughput (KB/s)', data=df)
     plt.xlabel('Message Size (B)')
     plt.ylabel('Throughput (KB/s)')
+    plt.yscale('log')
     plt.title('Message Size vs Throughput')
-    plt.savefig('message_size_vs_throughput.png')
+    plt.savefig('data/message_size_vs_throughput.png')
 
 
 def plot_message_size_vs_transactions(df):
@@ -20,7 +21,7 @@ def plot_message_size_vs_transactions(df):
     plt.xlabel('Message Size (B)')
     plt.ylabel('Number of Transactions')
     plt.title('Message Size vs Number of Transactions in 30s')
-    plt.savefig('message_size_vs_transactions.png')
+    plt.savefig('data/message_size_vs_transactions.png')
 
 
 def plot_graphs(df):
@@ -68,6 +69,19 @@ def run_single_threaded(host, port, num_bytes):
     return int(res)
 
 
+def get_numa_domain_network_card(node):
+    proc = subprocess.Popen(f'ssh {node} cat "/sys/class/net/ib0/device/numa_node"', shell=True)
+    stdout, stderr = proc.communicate()
+
+    res = str(stdout)
+    res = res.split('\n')
+    res = res[0].split('\\n')
+    res = res[0].strip("b'")
+    print('numa node: ' + res)
+
+    return int(res)
+
+
 def run_single_threaded_on_das(port, num_bytes, node1, node2):
     path_client = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/echo-benchmark-client'
     path_server = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/echo-benchmark-server'
@@ -77,13 +91,18 @@ def run_single_threaded_on_das(port, num_bytes, node1, node2):
     host = f'10.149.0.{ip_num}'
     print(f'running server on {host}:{port}')
 
-    server = subprocess.Popen(f'ssh {node1} "{path_server} {port}"', shell=True)
+    numa_node_server = get_numa_domain_network_card(node1)
+
+    server = subprocess.Popen(f'ssh {node1} "numactl -N {numa_node_server} -m {numa_node_server} {path_server} {port}"',
+                              shell=True)
 
     time.sleep(5)
 
+    numa_node_client = get_numa_domain_network_card(node2)
     data = gen_bytes(num_bytes)
-    proc = subprocess.Popen(f'ssh {node2} "{path_client} {host} {port} {num_bytes} {data}"', stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE, shell=True)
+    cmd = f'ssh {node2} "numactl -N {numa_node_client} -m {numa_node_client} {path_client} {host} {port} {num_bytes} {data}" '
+
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     stdout, stderr = proc.communicate(timeout=35)
 
     server.terminate()
@@ -126,7 +145,7 @@ if __name__ == '__main__':
         records.append(res)
     df = pandas.DataFrame.from_records(records)
 
-    df.to_csv('results_single_thread.csv')
+    df.to_csv('data/results_single_thread.csv')
 
     plot_graphs(df)
 

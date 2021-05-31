@@ -74,7 +74,7 @@ def get_numa_domain_network_card(node):
     stdout, stderr = proc.communicate()
 
     res = str(stdout)
-    print(res)
+    print('stdout' + res)
     res = res.split('\n')
     res = res[0].split('\\n')
     res = res[0].strip("b'")

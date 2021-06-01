@@ -29,7 +29,7 @@ def start_netserver(node=None):
         return __start_netserver_local()
     else:
         numa = get_numa_domain_network_card(node)
-        server = subprocess.Popen(f'ssh {node} "numactl -N {numa} -m {numa} netperf"', shell=True)
+        server = subprocess.Popen(f'ssh {node} "numactl -N {numa} -m {numa} netserver"', shell=True)
         return server
 
 

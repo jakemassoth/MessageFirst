@@ -1,6 +1,5 @@
 import subprocess
 import pandas as pd
-import sys
 
 
 def get_numa_domain_network_card(node):
@@ -39,7 +38,7 @@ def netperf_benchmark(test, netperf_global_args, netperf_test_args=None, run_on_
     cmd = 'netperf'
     global_args = netperf_global_args.split(' ')
     if run_on_das:
-        ip_num = node2.strip('node')
+        ip_num = node1.strip('node')
         ip_num = ip_num.lstrip('0')
         host = f'10.149.0.{ip_num}'
         args = [cmd, '-H', host, '-t', test]
@@ -54,9 +53,9 @@ def netperf_benchmark(test, netperf_global_args, netperf_test_args=None, run_on_
         args.extend(test_args)
 
     if run_on_das:
-        numa = get_numa_domain_network_card(node1)
+        numa = get_numa_domain_network_card(node2)
         cmd_str = ' '.join(args)
-        cmd_run = f'ssh {node1} "numactl -N {numa} -m {numa} {cmd_str}"'
+        cmd_run = f'ssh {node2} "numactl -N {numa} -m {numa} {cmd_str}"'
         print('Running ' + cmd_run)
         prun = subprocess.Popen(cmd_run, shell=True, stdout=subprocess.PIPE)
     else:

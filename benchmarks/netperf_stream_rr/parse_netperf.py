@@ -53,6 +53,7 @@ def netperf_benchmark(test, netperf_global_args, netperf_test_args=None, run_on_
         numa = get_numa_domain_network_card(node)
         cmd_str = ' '.join(args)
         cmd_run = f'ssh {node} "numactl -N {numa} -m {numa} {cmd_str}"'
+        print('Running ' + cmd_run)
         prun = subprocess.Popen(cmd_run, shell=True, stdout=subprocess.PIPE)
     else:
         prun = subprocess.Popen(args, stdout=subprocess.PIPE, text=True)

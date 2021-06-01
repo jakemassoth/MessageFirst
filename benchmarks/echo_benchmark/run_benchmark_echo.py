@@ -1,7 +1,6 @@
 import subprocess
 import os
 import random
-import sys
 import time
 import pandas
 import matplotlib.pyplot as plt
@@ -122,38 +121,39 @@ def run_single_threaded_on_das(port, num_bytes, node1, node2):
     return int(res)
 
 
-if __name__ == '__main__':
-    # message_sizes = [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
-    # test_length = 30
-    # records = []
-    # on_das = (len(sys.argv) == 3)
-    #
-    # for size in message_sizes:
-    #     print(f'Running benchmark for message size {size}')
-    #     if on_das:
-    #         print('Running on DAS')
-    #         num_transactions = run_single_threaded_on_das(str(random.randrange(1000, 9999)), size, sys.argv[1], sys.argv[2])
-    #     else:
-    #         print('Running Locally')
-    #         num_transactions = run_single_threaded('localhost', '8877', size)
-    #
-    #     thruput = calc_thruput(num_transactions, size, test_length)
-    #
-    #     print(f'Thruput: {thruput}, transactions: {num_transactions}')
-    #
-    #     res = {
-    #         'Message Size': size,
-    #         'Num Transactions': num_transactions,
-    #         'Throughput (MB/s)': thruput,
-    #         'Test Length (s)': test_length
-    #     }
-    #     records.append(res)
-    # df = pandas.DataFrame.from_records(records)
-    #
-    # df.to_csv(PATH + '/data/results_single_thread.csv')
+def run(on_das=False, node1=None, node2=None):
+    message_sizes = [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
+    test_length = 30
+    records = []
 
-    df = pandas.read_csv(PATH + '/data/results_single_thread.csv')
+    for size in message_sizes:
+        print(f'Running benchmark for message size {size}')
+        if on_das:
+            print('Running on DAS')
+            num_transactions = run_single_threaded_on_das(str(random.randrange(1000, 9999)), size, node1, node2)
+        else:
+            print('Running Locally')
+            num_transactions = run_single_threaded('localhost', '8877', size)
+
+        thruput = calc_thruput(num_transactions, size, test_length)
+
+        print(f'Thruput: {thruput}, transactions: {num_transactions}')
+
+        res = {
+            'Message Size': size,
+            'Num Transactions': num_transactions,
+            'Throughput (MB/s)': thruput,
+            'Test Length (s)': test_length
+        }
+        records.append(res)
+    df = pandas.DataFrame.from_records(records)
+
+    df.to_csv(PATH + '/data/results_single_thread.csv')
 
     plot_graphs(df)
 
     print(df)
+
+
+if __name__ == '__main__':
+    run()

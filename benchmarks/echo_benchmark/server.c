@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
     }
 
     int timeout = -1;
-    int num_threads = 6;
+    int num_threads = 1;
     if (mf_ctx_poll_init(&ctx, timeout, error_cb, timeout_cb, poll_resp, num_threads) != 0) {
         return -1;
     }

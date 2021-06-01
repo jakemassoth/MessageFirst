@@ -1,17 +1,12 @@
 import os.path
-import parse_netperf
-import plot
-import calc_overhead
-import sys
+from . import parse_netperf
+from . import plot
+from . import calc_overhead
 
 PATH = os.path.dirname(os.path.abspath(__file__))
 
 
-def run():
-    on_das = (len(sys.argv) == 3)
-    if on_das:
-        node1 = sys.argv[1]
-        node2 = sys.argv[2]
+def run(on_das=False, node1=None, node2=None):
     global_args = '-l 30 -c -C -f M'
     message_sizes = [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
 

@@ -1,8 +1,8 @@
 add_executable(echo-benchmark-multi-thread-server echo-benchmark-multi-thread/server.c)
 add_executable(echo-benchmark-multi-thread-client echo-benchmark-multi-thread/client.c)
 
-add_executable(echo-benchmark-server echo-benchmark/server.c)
-add_executable(echo-benchmark-client echo-benchmark/client.c)
+add_executable(echo-benchmark-server echo_benchmark/server.c)
+add_executable(echo-benchmark-client echo_benchmark/client.c)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)

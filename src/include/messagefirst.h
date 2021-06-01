@@ -16,6 +16,8 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <pthread.h>
+#include <netinet/tcp.h>
+
 
 
 typedef enum mf_error_e {

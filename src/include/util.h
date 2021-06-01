@@ -2,7 +2,8 @@
 #define MESSAGEFIRST_UTIL_H
 #include <fcntl.h>
 
-#define DEBUG 1
+//#define DEBUG 1
+#define NO_DELAY 1
 
 #ifdef DEBUG
 #define DEBUG_PRINT(fmt, ...) fprintf(stderr, "DEBUG: %s:%d:%s(): " fmt, \

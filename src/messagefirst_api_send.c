@@ -101,6 +101,14 @@ int mf_send_msg(int socket, struct mf_msg *msg_send, struct mf_msg *msg_recv, in
         }
     }
 
+#ifdef NO_DELAY
+    int flag = 1;
+    if (setsockopt(socket,IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(int)) != 0) {
+        perror("setsockopt()");
+    }
+#else
+#endif
+
     if ((err = send_data(socket, msg_send)) != MF_ERROR_OK) {
         mf_error_print(err);
         return -1;

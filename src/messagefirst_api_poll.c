@@ -113,6 +113,14 @@ mf_error_t handle_new_connection(int listen_sock, int epfd) {
         return err;
     }
 
+#ifdef NO_DELAY
+    int flag = 1;
+    if (setsockopt(connection_sock,IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(int)) != 0) {
+        perror("setsockopt()");
+    }
+#else
+#endif
+
     return MF_ERROR_OK;
 }
 

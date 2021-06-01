@@ -1,4 +1,6 @@
 import os.path
+from time import sleep
+
 from . import parse_netperf
 from . import plot
 from . import calc_overhead
@@ -19,6 +21,7 @@ def run(on_das=False, node1=None, node2=None):
     if on_das:
         print('Running on DAS')
         server = parse_netperf.start_netserver(node1)
+        sleep(5)
         out = parse_netperf.netperf_benchmark('TCP_STREAM', global_args, run_on_das=True, node=node2)
         master_df = parse_netperf.parse_to_df(out, 'TCP_STREAM')
 

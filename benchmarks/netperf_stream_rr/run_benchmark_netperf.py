@@ -22,11 +22,11 @@ def run(on_das=False, node1=None, node2=None):
         print('Running on DAS')
         server = parse_netperf.start_netserver(node1)
         sleep(5)
-        out = parse_netperf.netperf_benchmark('TCP_STREAM', global_args, run_on_das=True, node=node2)
+        out = parse_netperf.netperf_benchmark('TCP_STREAM', global_args, run_on_das=True, node1=node1, node2=node2)
         master_df = parse_netperf.parse_to_df(out, 'TCP_STREAM')
 
         for elem in rr_experiements:
-            out = parse_netperf.netperf_benchmark('TCP_RR', global_args, elem[1], run_on_das=True, node=node2)
+            out = parse_netperf.netperf_benchmark('TCP_RR', global_args, elem[1], run_on_das=True, node1=node1, node2=node2)
             temp_df = parse_netperf.parse_to_df(out, elem[0])
             master_df = master_df.append(temp_df, verify_integrity=True)
     else:

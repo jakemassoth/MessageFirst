@@ -33,26 +33,28 @@ def start_netserver(node=None):
         return server
 
 
-def netperf_benchmark(test, netperf_global_args, netperf_test_args=None, run_on_das=False, node=None):
+def netperf_benchmark(test, netperf_global_args, netperf_test_args=None, run_on_das=False, node1=None, node2=None):
     cmd = 'netperf'
     global_args = netperf_global_args.split(' ')
     if run_on_das:
-        ip_num = node.strip('node')
+        ip_num = node2.strip('node')
         ip_num = ip_num.lstrip('0')
         host = f'10.149.0.{ip_num}'
         args = [cmd, '-H', host, '-t', test]
     else:
         args = [cmd, '-t', test]
+
     args.extend(global_args)
+
     if netperf_test_args:
         args.append('--')
         test_args = netperf_test_args.split(' ')
         args.extend(test_args)
 
     if run_on_das:
-        numa = get_numa_domain_network_card(node)
+        numa = get_numa_domain_network_card(node1)
         cmd_str = ' '.join(args)
-        cmd_run = f'ssh {node} "numactl -N {numa} -m {numa} {cmd_str}"'
+        cmd_run = f'ssh {node1} "numactl -N {numa} -m {numa} {cmd_str}"'
         print('Running ' + cmd_run)
         prun = subprocess.Popen(cmd_run, shell=True, stdout=subprocess.PIPE)
     else:

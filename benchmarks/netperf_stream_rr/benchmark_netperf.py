@@ -1,22 +1,19 @@
-import os.path
+import os
 from time import sleep
-
-from . import parse_netperf
-from . import plot
-from . import calc_overhead
+from benchmarks.util import parse_netperf
+from benchmarks.util.utils import make_dirs
 
 PATH = os.path.dirname(os.path.abspath(__file__))
 
 
-def run(on_das=False, node1=None, node2=None):
+def run_benchmark(on_das=False, node1=None, node2=None):
+    make_dirs(PATH)
     global_args = '-l 30 -c -C -f M'
     message_sizes = [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
 
     rr_experiements = []
     for size in message_sizes:
         rr_experiements.append(['TCP_RR {}B'.format(size), '-r {},{}'.format(size, size)])
-
-    print(rr_experiements)
 
     if on_das:
         print('Running on DAS')
@@ -45,9 +42,6 @@ def run(on_das=False, node1=None, node2=None):
     print(master_df)
     master_df.to_csv(PATH + '/data/results.csv')
 
-    plot.run()
-    calc_overhead.run()
-
 
 if __name__ == '__main__':
-    run()
+    run_benchmark()

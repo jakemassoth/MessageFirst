@@ -3,34 +3,10 @@ import os
 import random
 import time
 import pandas
-import matplotlib.pyplot as plt
+from benchmarks.util.utils import make_dirs
 
 
 PATH = os.path.dirname(os.path.abspath(__file__))
-
-
-def plot_message_size_vs_throughput(df):
-    plt.bar('Message Size', 'Throughput (MB/s)', data=df)
-    plt.xlabel('Message Size (B)')
-    plt.ylabel('Throughput (MB/s)')
-    plt.yscale('log')
-    plt.title('Message Size vs Throughput')
-    plt.savefig(PATH + '/data/message_size_vs_throughput.png')
-
-
-def plot_message_size_vs_transactions(df):
-    plt.bar('Message Size', 'Num Transactions', data=df)
-    plt.xlabel('Message Size (B)')
-    plt.ylabel('Number of Transactions')
-    plt.title('Message Size vs Number of Transactions in 30s')
-    plt.savefig(PATH + '/data/message_size_vs_transactions.png')
-
-
-def plot_graphs(df):
-    df['Message Size'] = df['Message Size'].apply(str)
-    plot_message_size_vs_transactions(df)
-    plt.close()
-    plot_message_size_vs_throughput(df)
 
 
 def calc_thruput(num_transactions, message_size, test_length):
@@ -121,7 +97,9 @@ def run_single_threaded_on_das(port, num_bytes, node1, node2):
     return int(res)
 
 
-def run(on_das=False, node1=None, node2=None):
+def run_benchmark(on_das=False, node1=None, node2=None):
+    make_dirs(PATH)
+
     message_sizes = [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
     test_length = 30
     records = []
@@ -150,10 +128,6 @@ def run(on_das=False, node1=None, node2=None):
 
     df.to_csv(PATH + '/data/results_single_thread.csv')
 
-    plot_graphs(df)
-
-    print(df)
-
 
 if __name__ == '__main__':
-    run()
+    run_benchmark()

@@ -26,7 +26,7 @@ def calc_num_transactions(row):
 
     thruput = row['Netperf Throughput (MB/s)'] * (1024 * 1024)
 
-    return (thruput / (num_bytes * 2)) * 30
+    return thruput / (num_bytes * 2)
 
 
 def get_overhead(experiment, baseline):
@@ -53,10 +53,9 @@ def plot_comparison_graphs():
     netperf_df = netperf_df.drop(['index'], axis=1)
     netperf_df = netperf_df.rename(columns={'Unnamed: 0': 'Test'})
     netperf_df = netperf_df.rename(columns={'tput MBps': 'Netperf Throughput (MB/s)'})
-    netperf_df['Num Transactions'] = netperf_df.apply(calc_num_transactions, axis=1)
+    netperf_df['Transactions per second'] = netperf_df.apply(calc_num_transactions, axis=1)
 
-    print(netperf_df.columns)
-    print(netperf_df)
+    message_first_1_thread_df['Transactions per second'] = message_first_1_thread_df['Num Transactions'].apply(lambda x: x / 30)
 
     fix, ax = plt.subplots()
     index = np.arange(9)
@@ -77,13 +76,13 @@ def plot_comparison_graphs():
     plt.close()
 
     fix, ax = plt.subplots()
-    netperf = ax.bar(index, message_first_1_thread_df['Num Transactions'], bar_width, label='Netperf')
+    netperf = ax.bar(index, netperf_df['Transactions per second'], bar_width, label='Netperf')
 
-    messagefirst = ax.bar(index + bar_width, netperf_df['Num Transactions'], bar_width,
+    messagefirst = ax.bar(index + bar_width, message_first_1_thread_df['Transactions per second'], bar_width,
                           label='MessageFirst')
 
     ax.set_xlabel('Message Size (B)')
-    ax.set_ylabel('Number of Transactions in 30s')
+    ax.set_ylabel('Transactions per Second')
     ax.set_xticks(index + bar_width / 2)
     ax.set_xticklabels(message_first_1_thread_df['Message Size'])
     ax.legend()
@@ -91,8 +90,8 @@ def plot_comparison_graphs():
     plt.savefig(PATH + '/plots/MessageFirst vs Netperf transactions.png')
     plt.close()
 
-    overhead_transaction_df = pandas.concat([netperf_df['Num Transactions'].rename('netperf'),
-                                             message_first_1_thread_df['Num Transactions'].rename('MessageFirst')],
+    overhead_transaction_df = pandas.concat([netperf_df['Transactions per second'].rename('netperf'),
+                                             message_first_1_thread_df['Transactions per second'].rename('MessageFirst')],
                                             axis=1)
 
     overhead_thruput_df = pandas.concat([netperf_df['Netperf Throughput (MB/s)'].rename('netperf'),
@@ -107,11 +106,11 @@ def plot_comparison_graphs():
     message_first_1_thread_df['Overhead (Thruput)'].describe().to_csv(PATH + '/data/overhead_thruput_stats.csv')
 
     print('Average transaction time (netperf) microseconds')
-    transactions_per_second_netperf = netperf_df['Num Transactions'].mean()
+    transactions_per_second_netperf = netperf_df['Transactions per second'].mean()
     print((1 / transactions_per_second_netperf) * (10 ** 6))
 
     print('Average transaction time (messagefirst) microseconds')
-    transactions_per_second_messagefirst = message_first_1_thread_df['Num Transactions'].mean()
+    transactions_per_second_messagefirst = message_first_1_thread_df['Transactions per second'].mean()
     print((1 / transactions_per_second_messagefirst) * (10 ** 6))
 
     plot_overhead(message_first_1_thread_df)

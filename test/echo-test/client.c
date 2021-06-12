@@ -4,17 +4,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <include/messagefirst_api.h>
-#include <sys/time.h>
-#include <signal.h>
-
-int total = 0;
-int sock;
-
-void timer_handler(int signum) {
-    printf("%d\n", total);
-    close(sock);
-    exit(0);
-}
 
 int main(int argc, char *argv[]) {
     assert(argc == 5);
@@ -22,7 +11,6 @@ int main(int argc, char *argv[]) {
     const int server_port = atoi(argv[2]);
     const int data_len = atoi(argv[3]);
     const char *data = argv[4];
-
 
     struct sockaddr_in server_address;
     memset(&server_address, 0, sizeof(server_address));
@@ -32,6 +20,7 @@ int main(int argc, char *argv[]) {
 
     server_address.sin_port = htons(server_port);
 
+    int sock;
     if ((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
         perror("socket()");
         return 1;
@@ -51,40 +40,19 @@ int main(int argc, char *argv[]) {
     msg.len = data_len;
     memcpy(msg.data, data, data_len);
 
-    struct itimerval timer;
-    struct sigaction sa;
-
-    memset(&sa, 0, sizeof(sa));
-
-    sa.sa_handler = &timer_handler;
-
-    sigaction(SIGALRM, &sa, NULL);
-
-    timer.it_value.tv_sec = 30;
-    timer.it_value.tv_usec = 0;
-
-    timer.it_interval.tv_sec = 0;
-    timer.it_interval.tv_usec = 0;
-    int res;
-
-    setitimer(ITIMER_REAL, &timer, NULL);
-    for (;;) {
+    for (int i = 0; i < 10; i++) {
         memset(&msg_recv, 0, sizeof(struct mf_msg));
-        res = mf_send_msg(sock, &msg, &msg_recv, timeout);
+        int res = mf_send_msg(sock, &msg, &msg_recv, timeout);
 
         if (res != 0) {
-           goto cleanup;
+            return 1;
         }
-        // sanity checks
-        assert(msg_recv.len == msg.len);
+
         assert(strncmp(msg_recv.data, msg.data, msg.len) == 0);
-
-        total++;
+        assert(msg_recv.len == msg.len);
     }
-
-    cleanup:
 
     close(sock);
 
-    return res;
+    return 0;
 }

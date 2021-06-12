@@ -9,18 +9,16 @@ PATH = os.path.dirname(os.path.abspath(__file__))
 
 def plot_message_size_vs_throughput(df):
     plt.bar('Message Size', 'Throughput (MB/s)', data=df)
-    plt.xlabel('Message Size (B)')
-    plt.ylabel('Throughput (MB/s) (log scale)')
+    plt.xlabel('Message Size [B]')
+    plt.ylabel('Throughput [MB/s] (log scale)')
     plt.yscale('log')
-    plt.title('Message Size vs Throughput')
     plt.savefig(PATH + '/plots/message_size_vs_throughput.png')
 
 
 def plot_message_size_vs_transactions(df):
     plt.bar('Message Size', 'Transactions per second', data=df)
-    plt.xlabel('Message Size (B)')
+    plt.xlabel('Message Size [B]')
     plt.ylabel('Transactions per Second')
-    plt.title('Message Size vs Transactions per S')
     plt.savefig(PATH + '/plots/message_size_vs_transactions.png')
 
 

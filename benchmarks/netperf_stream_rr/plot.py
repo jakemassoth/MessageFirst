@@ -11,7 +11,6 @@ def plot_overhead(df):
     plt.barh(df.index, 'Overhead', data=df)
     plt.ylabel('Test')
     plt.xlabel('Overhead')
-    plt.title('Request-Response Test Overhead')
     plt.tight_layout()
     plt.savefig(PATH + '/data/overhead_vs_test.png')
     plt.close()
@@ -19,9 +18,7 @@ def plot_overhead(df):
 
 def make_test_vs_thruput(df):
     plt.barh('Test', 'tput MBps', data=df)
-    plt.ylabel('Test')
-    plt.xlabel('Throughput (MB/s) (log scale)')
-    plt.title('Throughput in netperf Tests')
+    plt.xlabel('Throughput [MB/s] (log scale)')
     plt.tight_layout()
     plt.xscale('log')
     plt.savefig(PATH + '/plots/message_size_vs_throughput.png')

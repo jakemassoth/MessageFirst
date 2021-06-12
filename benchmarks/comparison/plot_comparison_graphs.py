@@ -13,7 +13,6 @@ def plot_overhead(df):
     plt.bar('Message Size', 'Overhead (Thruput)', data=df)
     plt.xlabel('Message size (B)')
     plt.ylabel('Overhead')
-    plt.title('MessageFirst Overhead Relative to Netperf (Transactions)')
     plt.savefig(PATH + '/plots/overhead_netperf_messagefirst.png')
     plt.close()
 
@@ -65,8 +64,8 @@ def plot_comparison_graphs():
     messagefirst = ax.bar(index + bar_width, message_first_1_thread_df['MessageFirst Throughput (MB/s)'], bar_width,
                           label='MessageFirst')
 
-    ax.set_xlabel('Message Size (B)')
-    ax.set_ylabel('Throughput (MB/s) (log scale)')
+    ax.set_xlabel('Message Size [B]')
+    ax.set_ylabel('Throughput [MB/s] (log scale)')
     ax.set_yscale('log')
     ax.set_xticks(index + bar_width / 2)
     ax.set_xticklabels(message_first_1_thread_df['Message Size'])
@@ -81,7 +80,7 @@ def plot_comparison_graphs():
     messagefirst = ax.bar(index + bar_width, message_first_1_thread_df['Transactions per second'], bar_width,
                           label='MessageFirst')
 
-    ax.set_xlabel('Message Size (B)')
+    ax.set_xlabel('Message Size [B]')
     ax.set_ylabel('Transactions per Second')
     ax.set_xticks(index + bar_width / 2)
     ax.set_xticklabels(message_first_1_thread_df['Message Size'])

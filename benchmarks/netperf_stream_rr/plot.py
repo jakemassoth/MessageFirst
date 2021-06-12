@@ -1,10 +1,15 @@
 import pandas
 import matplotlib.pyplot as plt
 import os
-from benchmarks.util.utils import make_dirs
-from benchmarks.util.calc_overhead import add_overhead_column
+from benchmarks.util.utils import make_dirs, get_overhead
 
 PATH = os.path.dirname(os.path.abspath(__file__))
+
+
+def add_overhead_column(df, baseline):
+    res = pandas.DataFrame(columns=['Overhead'], index=df.index)
+    res['Overhead'] = df['tput MBps'].apply(lambda x: get_overhead(x, baseline))
+    return res
 
 
 def plot_overhead(df):
@@ -28,14 +33,11 @@ def make_overhead_graph(df):
     df = df.set_index('Test')
     baseline = df['tput MBps'].loc['TCP_STREAM']
     df = df.drop('TCP_STREAM')
-    print(df)
-    print(baseline)
 
     res = add_overhead_column(df, baseline)
-    print(res)
     df_stats = res.describe()
-    print(df_stats)
     df_stats.to_csv(PATH + '/data/stats.csv')
+    print(f'Average overhead introduced by TCP_RR: {res["Overhead"].mean()}')
     plot_overhead(res)
 
 

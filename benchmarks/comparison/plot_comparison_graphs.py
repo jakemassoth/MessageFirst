@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import os
-from benchmarks.util.utils import make_dirs
+from benchmarks.util.utils import make_dirs, get_overhead
 
 PATH = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -56,13 +56,12 @@ def plot_thruput(message_first_1_thread_df, netperf_df):
     plt.close()
 
 
-def add_overhead_column(message_first_1_thread_df, netperf_df):
+def get_overhead_column(message_first_1_thread_df, netperf_df):
     overhead_thruput_df = pandas.concat([netperf_df['Netperf Throughput (MB/s)'].rename('netperf'),
                                          message_first_1_thread_df['MessageFirst Throughput (MB/s)'].rename(
                                              'MessageFirst')], axis=1)
 
-    return overhead_thruput_df.apply(calc_overhead, axis=1)
-
+    return overhead_thruput_df.apply(lambda row: get_overhead(row['MessageFirst'], row['netperf']), axis=1)
 
 
 def calc_num_transactions(row):
@@ -74,14 +73,6 @@ def calc_num_transactions(row):
     thruput = row['Netperf Throughput (MB/s)'] * (1024 * 1024)
 
     return thruput / (num_bytes * 2)
-
-
-def get_overhead(experiment, baseline):
-    return abs((experiment - baseline) / baseline)
-
-
-def calc_overhead(row):
-    return get_overhead(row['MessageFirst'], row['netperf'])
 
 
 def fix_csv_parse(netperf_df):
@@ -110,17 +101,16 @@ def plot_comparison_graphs():
 
     plot_thruput(message_first_1_thread_df, netperf_df)
 
-    message_first_1_thread_df['Overhead (Thruput)'] = add_overhead_column(message_first_1_thread_df, netperf_df)
+    message_first_1_thread_df['Overhead (Thruput)'] = get_overhead_column(message_first_1_thread_df, netperf_df)
     message_first_1_thread_df['Overhead (Thruput)'].describe().to_csv(PATH + '/data/overhead_thruput_stats.csv')
+    print(f'Average overhead introduced by MessageFirst: {message_first_1_thread_df["Overhead (Thruput)"].mean()}')
     plot_overhead(message_first_1_thread_df)
 
-    print('Average transaction time (netperf) microseconds')
     transactions_per_second_netperf = netperf_df['Transactions per second'].mean()
-    print((1 / transactions_per_second_netperf) * (10 ** 6))
+    print(f'Average transaction time (netperf) microseconds: {(1 / transactions_per_second_netperf) * (10 ** 6)}')
 
-    print('Average transaction time (messagefirst) microseconds')
     transactions_per_second_messagefirst = message_first_1_thread_df['Transactions per second'].mean()
-    print((1 / transactions_per_second_messagefirst) * (10 ** 6))
+    print(f'Average transaction time (messagefirst) microseconds {(1 / transactions_per_second_messagefirst) * (10 ** 6)}')
 
 
 if __name__ == '__main__':

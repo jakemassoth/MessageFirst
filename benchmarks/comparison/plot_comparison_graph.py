@@ -5,17 +5,8 @@ import numpy as np
 import os
 from . import utils
 
-
 PATH = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-
-def plot_overhead(df):
-    plt.bar('Message Size', 'Overhead (Thruput)', data=df)
-    plt.xlabel('Message size (B)')
-    plt.ylabel('Overhead')
-    plt.savefig(PATH + '/plots/overhead_netperf_messagefirst.png')
-    plt.close()
 
 
 def plot_transactions(message_first_1_thread_df, netperf_df):
@@ -34,7 +25,9 @@ def plot_transactions(message_first_1_thread_df, netperf_df):
     ax.legend()
 
     plt.savefig(PATH + '/plots/MessageFirst vs Netperf transactions.png')
-    plt.close()
+    plt.close(fix)
+    plt.cla()
+    plt.clf()
 
 
 def plot_thruput(message_first_1_thread_df, netperf_df):
@@ -54,15 +47,9 @@ def plot_thruput(message_first_1_thread_df, netperf_df):
     ax.legend()
 
     plt.savefig(PATH + '/plots/MessageFirst vs Netperf throughput.png')
-    plt.close()
-
-
-def get_overhead_column(message_first_1_thread_df, netperf_df):
-    overhead_thruput_df = pandas.concat([netperf_df['Netperf Throughput (MB/s)'].rename('netperf'),
-                                         message_first_1_thread_df['MessageFirst Throughput (MB/s)'].rename(
-                                             'MessageFirst')], axis=1)
-
-    return overhead_thruput_df.apply(lambda row: utils.get_overhead(row['MessageFirst'], row['netperf']), axis=1)
+    plt.close(fix)
+    plt.cla()
+    plt.clf()
 
 
 def calc_num_transactions(row):
@@ -76,14 +63,6 @@ def calc_num_transactions(row):
     return thruput / (num_bytes * 2)
 
 
-def fix_csv_parse(netperf_df):
-    netperf_df = netperf_df.drop([0]).reset_index()
-    netperf_df = netperf_df.drop(['index'], axis=1)
-    netperf_df = netperf_df.rename(columns={'Unnamed: 0': 'Test'})
-    netperf_df = netperf_df.rename(columns={'tput MBps': 'Netperf Throughput (MB/s)'})
-    return netperf_df
-
-
 def plot_comparison_graphs():
     utils.make_dirs(PATH)
 
@@ -93,7 +72,7 @@ def plot_comparison_graphs():
     message_first_1_thread_df = message_first_1_thread_df.rename(
         columns={'Throughput (MB/s)': 'MessageFirst Throughput (MB/s)'})
 
-    netperf_df = fix_csv_parse(netperf_df)
+    netperf_df = utils.fix_csv_parse(netperf_df)
 
     # Netperf comes as thruput, so we need to do some more complicated math for that.
     netperf_df['Transactions per second'] = netperf_df.apply(calc_num_transactions, axis=1)
@@ -101,11 +80,7 @@ def plot_comparison_graphs():
     message_first_1_thread_df['Transactions per second'] = message_first_1_thread_df['Num Transactions'].apply(lambda x: x / 30)
 
     plot_thruput(message_first_1_thread_df, netperf_df)
-
-    message_first_1_thread_df['Overhead (Thruput)'] = get_overhead_column(message_first_1_thread_df, netperf_df)
-    message_first_1_thread_df['Overhead (Thruput)'].describe().to_csv(PATH + '/data/overhead_thruput_stats.csv')
-    print(f'Average overhead introduced by MessageFirst: {message_first_1_thread_df["Overhead (Thruput)"].mean()}')
-    plot_overhead(message_first_1_thread_df)
+    plot_transactions(message_first_1_thread_df, netperf_df)
 
     transactions_per_second_netperf = netperf_df['Transactions per second'].mean()
     print(f'Average transaction time (netperf) microseconds: {(1 / transactions_per_second_netperf) * (10 ** 6)}')

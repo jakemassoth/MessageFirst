@@ -69,6 +69,14 @@ sudo apt update
 sudo apt install netperf
 ```
 
+On the DAS-5:
+
+```shell
+module load netperf
+module load cmake/3.15.4
+module load gcc
+```
+
 Verify that netperf is working with a quick test benchmark:
 
 ```shell
@@ -100,7 +108,7 @@ This will generate .png plots for each benchmark in its relevant `plots` folder.
 First, reserve two nodes as so:
 
 ```shell
-preserve -np 3 -t 900
+preserve -np 2 -t 900
 ```
 
 Use `preserve -llist` to list the reservations currently active. Note the node numbers you have been assigned. 

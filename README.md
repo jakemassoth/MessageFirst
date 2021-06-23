@@ -111,7 +111,7 @@ Then run the benchmark as so:
 python benchmarks/run_benchmarks.py node<X> node<Y>
 ```
 
-Replace <X> and <Y> with the node numbers of your reservation.
+Replace \<X\> and \<Y\> with the node numbers of your reservation.
 
 After this completes (it should take a few minutes), make the plots:
 

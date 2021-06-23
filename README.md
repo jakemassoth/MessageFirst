@@ -68,8 +68,55 @@ tool used in the `netperf_stream_rr` benchmark. On Ubuntu 18.04:
 sudo apt update
 sudo apt install netperf
 ```
+
+Verify that netperf is working with a quick test benchmark:
+
+```shell
+netserver
+netperf
+```
+
+This benchmark should complete successfully after about 10 seconds and display some statistics.
+
 ### Running locally
-TODO
+Running benchmarks locally is pretty simple:
+
+```shell
+python benchmarks/run_benchmarks.py
+```
+
+This will take a few minutes to run. It will generate .csv files containing the data from the benchmarks in the relevant
+`data` folders for each benchmark.
+
+To plot graphs:
+
+```shell
+python benchmarks/make_plots.py
+```
+
+This will generate .png plots for each benchmark in its relevant `plots` folder.
 
 ### Running on DAS-5
-TODO
+First, reserve two nodes as so:
+
+```shell
+preserve -np 3 -t 900
+```
+
+Use `preserve -llist` to list the reservations currently active. Note the node numbers you have been assigned. 
+
+Then run the benchmark as so:
+
+```shell
+python benchmarks/run_benchmarks.py node<X> node<Y>
+```
+
+Replace <X> and <Y> with the node numbers of your reservation.
+
+After this completes (it should take a few minutes), make the plots:
+
+```shell
+python benchmarks/make_plots.py
+```
+
+This will generate .png plots for each benchmark in its relevant `plots` folder.

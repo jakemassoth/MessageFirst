@@ -1,13 +1,12 @@
 import os
 from time import sleep
-from benchmarks.util import parse_netperf
-from benchmarks.util.utils import make_dirs
-
+from . import parse_netperf
+from . import utils
 PATH = os.path.dirname(os.path.abspath(__file__))
 
 
 def run_benchmark(on_das=False, node1=None, node2=None):
-    make_dirs(PATH)
+    utils.make_dirs(PATH)
     global_args = '-l 30 -c -C -f M'
     message_sizes = [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
 

@@ -3,7 +3,7 @@ import os
 import random
 import time
 import pandas
-from benchmarks.util.utils import make_dirs
+from . import utils
 
 
 PATH = os.path.dirname(os.path.abspath(__file__))
@@ -98,7 +98,7 @@ def run_single_threaded_on_das(port, num_bytes, node1, node2):
 
 
 def run_benchmark(on_das=False, node1=None, node2=None):
-    make_dirs(PATH)
+    utils.make_dirs(PATH)
 
     message_sizes = [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
     test_length = 30

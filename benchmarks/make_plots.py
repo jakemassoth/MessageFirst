@@ -1,6 +1,6 @@
 import echo_benchmark.plot
 import netperf_stream_rr.plot
-from benchmarks.comparison import plot_comparison_graphs
+from comparison import plot_comparison_graphs
 
 if __name__ == '__main__':
     print('Saving netperf benchmark plots in benchmarks/netperf_stream_rr/plots')

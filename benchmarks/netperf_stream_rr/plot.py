@@ -1,14 +1,15 @@
 import pandas
 import matplotlib.pyplot as plt
 import os
-from benchmarks.util.utils import make_dirs, get_overhead
+from . import utils
+
 
 PATH = os.path.dirname(os.path.abspath(__file__))
 
 
 def add_overhead_column(df, baseline):
     res = pandas.DataFrame(columns=['Overhead'], index=df.index)
-    res['Overhead'] = df['tput MBps'].apply(lambda x: get_overhead(x, baseline))
+    res['Overhead'] = df['tput MBps'].apply(lambda x: utils.get_overhead(x, baseline))
     return res
 
 
@@ -17,7 +18,7 @@ def plot_overhead(df):
     plt.ylabel('Test')
     plt.xlabel('Overhead')
     plt.tight_layout()
-    plt.savefig(PATH + '/data/overhead_vs_test.png')
+    plt.savefig(PATH + '/plots/overhead_vs_test_netperf.png')
     plt.close()
 
 
@@ -26,7 +27,8 @@ def make_test_vs_thruput(df):
     plt.xlabel('Throughput [MB/s] (log scale)')
     plt.tight_layout()
     plt.xscale('log')
-    plt.savefig(PATH + '/plots/message_size_vs_throughput.png')
+    plt.savefig(PATH + '/plots/message_size_vs_throughput_netperf.png')
+    plt.close()
 
 
 def make_overhead_graph(df):
@@ -42,7 +44,7 @@ def make_overhead_graph(df):
 
 
 def make_plots():
-    make_dirs(PATH)
+    utils.make_dirs(PATH)
 
     df = pandas.read_csv(PATH + '/data/results.csv')
     df = df.rename(columns={'Unnamed: 0': 'Test'})

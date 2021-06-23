@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import os
-from benchmarks.util.utils import make_dirs, get_overhead
+from . import utils
+
 
 PATH = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -52,7 +53,7 @@ def plot_thruput(message_first_1_thread_df, netperf_df):
     ax.set_xticklabels(message_first_1_thread_df['Message Size'])
     ax.legend()
 
-    plt.savefig(PATH + '/plots/MessageFirst vs Netperf.png')
+    plt.savefig(PATH + '/plots/MessageFirst vs Netperf throughput.png')
     plt.close()
 
 
@@ -61,7 +62,7 @@ def get_overhead_column(message_first_1_thread_df, netperf_df):
                                          message_first_1_thread_df['MessageFirst Throughput (MB/s)'].rename(
                                              'MessageFirst')], axis=1)
 
-    return overhead_thruput_df.apply(lambda row: get_overhead(row['MessageFirst'], row['netperf']), axis=1)
+    return overhead_thruput_df.apply(lambda row: utils.get_overhead(row['MessageFirst'], row['netperf']), axis=1)
 
 
 def calc_num_transactions(row):
@@ -84,7 +85,7 @@ def fix_csv_parse(netperf_df):
 
 
 def plot_comparison_graphs():
-    make_dirs(PATH)
+    utils.make_dirs(PATH)
 
     message_first_1_thread_df = pd.read_csv(DATA_PATH + '/echo_benchmark/data/results_single_thread.csv')
     netperf_df = pd.read_csv(DATA_PATH + '/netperf_stream_rr/data/results.csv')
